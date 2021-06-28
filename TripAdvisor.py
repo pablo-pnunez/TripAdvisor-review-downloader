@@ -19,10 +19,12 @@ import filetype
 import cv2
 from PIL import Image
 
+
 class BlockAll(cookiejar.CookiePolicy):
     return_ok = set_ok = domain_return_ok = path_return_ok = lambda self, *args, **kwargs: False
     netscape = True
     rfc2965 = hide_cookie2 = False
+
 
 class TripAdvisorHelper():
 
@@ -31,10 +33,10 @@ class TripAdvisorHelper():
         pd.set_option('display.max_columns', 500)
         pd.set_option('display.width', 1000)
 
-    def joinReviews(self,CITY):
+    def joinReviews(self, CITY):
 
         revs = []
-        #usrs = pd.DataFrame(columns=TripAdvisor.user_cols)
+        # usrs = pd.DataFrame(columns=TripAdvisor.user_cols)
 
         tmp_folder = TripAdvisor.TMP_FOLDER+"/"+CITY.lower()
 
@@ -42,23 +44,25 @@ class TripAdvisorHelper():
 
             if(("reviews" in f) and (".pkl" in f)):
                 tmp_rev = pd.read_pickle(tmp_folder+"/"+f)
-                #revs = revs.append(tmp_rev,ignore_index=True)
-                if(len(tmp_rev)>0):revs.extend(tmp_rev.values.tolist())
+                # revs = revs.append(tmp_rev,ignore_index=True)
+                if(len(tmp_rev) > 0):
+                    revs.extend(tmp_rev.values.tolist())
 
-        #usrs = usrs.drop_duplicates("id")
+        # usrs = usrs.drop_duplicates("id")
         revs = pd.DataFrame(revs)
         revs.columns = tmp_rev.columns
         revs = revs.drop_duplicates("reviewId")
 
-        #if(len(usrs)>0):pd.to_pickle(usrs,"users.pkl")
-        if(len(revs)>0):pd.to_pickle(revs,"revIDS-"+CITY.lower().replace(" ","")+".pkl")
+        # if(len(usrs)>0):pd.to_pickle(usrs,"users.pkl")
+        if(len(revs) > 0):
+            pd.to_pickle(revs, "revIDS-"+CITY.lower().replace(" ", "")+".pkl")
 
-        #Eliminar los ficheros de la carpeta.
+        # Eliminar los ficheros de la carpeta.
         for f in os.listdir(tmp_folder):
-            if(("reviews-" in f)  and (".pkl" in f)):
+            if(("reviews-" in f) and (".pkl" in f)):
                 os.remove(tmp_folder+"/"+f)
 
-    def joinAndAppendFiles(self,CITY):
+    def joinAndAppendFiles(self, CITY):
 
         revs = []
         usrs = []
@@ -69,8 +73,10 @@ class TripAdvisorHelper():
             if(".pkl" in f):
                 tmp = pd.read_pickle(tmp_folder + "/" + f)
                 tmp = tmp.values.tolist()
-                if("reviews-" in f):revs.extend(tmp)
-                elif("users-" in f):usrs.extend(tmp)
+                if("reviews-" in f):
+                    revs.extend(tmp)
+                elif("users-" in f):
+                    usrs.extend(tmp)
 
         revs = pd.DataFrame(revs)
         revs.columns = TripAdvisor.review_cols
@@ -80,19 +86,19 @@ class TripAdvisorHelper():
         usrs.columns = TripAdvisor.user_cols
         usrs = usrs.drop_duplicates("id")
 
-        pd.to_pickle(revs,"reviews-"+CITY.lower().replace(" ","")+".pkl")
-        pd.to_pickle(usrs,"users-"+CITY.lower().replace(" ","")+".pkl")
+        pd.to_pickle(revs, "reviews-"+CITY.lower().replace(" ", "")+".pkl")
+        pd.to_pickle(usrs, "users-"+CITY.lower().replace(" ", "")+".pkl")
 
         # Eliminar los ficheros de la carpeta.
         for f in os.listdir(TripAdvisor.TMP_FOLDER):
-            if((".pkl" in f) and(("reviews-" in f) or ("users-" in f))):
+            if((".pkl" in f) and (("reviews-" in f) or ("users-" in f))):
                 os.remove(tmp_folder + "/" + f)
 
-        os.remove("revIDS-"+CITY.lower().replace(" ","")+".pkl")
+        os.remove("revIDS-"+CITY.lower().replace(" ", "")+".pkl")
 
     def joinRestaurants(self, CITY):
 
-        #rest = pd.DataFrame(columns=TripAdvisor.rest_cols)
+        # rest = pd.DataFrame(columns=TripAdvisor.rest_cols)
         rest = []
 
         tmp_folder = TripAdvisor.TMP_FOLDER+"/"+CITY.lower()
@@ -101,25 +107,26 @@ class TripAdvisorHelper():
 
             if (("restaurants-" in f) and (".pkl" in f)):
                 tmp_rest = pd.read_pickle(tmp_folder + "/" + f)
-                if(len(tmp_rest)>0):rest.extend(tmp_rest.values.tolist())
-                #rest = rest.append(tmp_rest, ignore_index=True)
+                if(len(tmp_rest) > 0):
+                    rest.extend(tmp_rest.values.tolist())
+                # rest = rest.append(tmp_rest, ignore_index=True)
 
         rest = pd.DataFrame(rest)
         rest.columns = TripAdvisor.rest_cols
 
         if (len(rest) > 0):
             rest = rest.drop_duplicates("id")
-            pd.to_pickle(rest, "restaurants-"+CITY.lower().replace(" ","")+".pkl")
+            pd.to_pickle(rest, "restaurants-"+CITY.lower().replace(" ", "")+".pkl")
 
         # Eliminar los ficheros de la carpeta.
         for f in os.listdir(tmp_folder):
             if (("restaurants-" in f) and (".pkl" in f)):
                 os.remove(tmp_folder + "/" + f)
 
-    def getRestaurantPages(self,CITY):
+    def getRestaurantPages(self, CITY):
         # url = "https://www.tripadvisor.com/RestaurantSearch?Action=PAGE&geo=" + str(self.getGeoId(CITY)) + "&sortOrder=alphabetical"
         url = "https://www.tripadvisor.es/RestaurantSearch?Action=PAGE&ajax=1&availSearchEnabled=false&sortOrder=alphabetical&geo=%s&o=a0" % str(self.getGeoId(CITY))
-        headers = { 'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36', }
+        headers = {'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36', }
         r = requests.get(url, headers=headers)
         pq = PyQuery(r.text)
         data = json.loads(pq.find("div#component_39").attr("data-component-props"))
@@ -128,12 +135,13 @@ class TripAdvisorHelper():
 
     def getGeoId(self, CITY):
         url = "https://www.tripadvisor.com/TypeAheadJson?action=API&query=" + CITY
-        headers = { 'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36', }
+        headers = {'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36', }
         r = requests.get(url, headers=headers)
         response = json.loads(r.text)
         id = int(response['results'][0]['value'])
 
         return id
+
 
 class TripAdvisor(threading.Thread):
 
@@ -148,11 +156,11 @@ class TripAdvisor(threading.Thread):
     STEP = None
     ITEMS = None
 
-    rest_cols = ["id","name","city","priceInterval","url","rating","type"]
+    rest_cols = ["id", "name", "city", "priceInterval", "url", "rating", "type"]
     review_cols = ["reviewId", "userId", "restaurantId", "title", "text", "date", "rating", "language", "images", "url"]
     user_cols = ["id", "name", "location"]
 
-    def __init__(self, threadID, name, counter,city = "Barcelona", data = None, step=1, lang="es"):
+    def __init__(self, threadID, name, counter, city="Barcelona", data=None, step=1, lang="es"):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = name
@@ -160,17 +168,18 @@ class TripAdvisor(threading.Thread):
 
         self.LANG = lang
         self.CITY = city
-        self.PATH = "/media/nas/pperez/data/TripAdvisor/" + city.lower().replace(" ","") + "_data/"
+        self.PATH = "/media/nas/pperez/data/TripAdvisor/" + city.lower().replace(" ", "") + "_data/"
 
         self.TMP_FOLDER = self.TMP_FOLDER+"/"+city.lower()
-        os.makedirs(self.TMP_FOLDER,exist_ok=True)
+        os.makedirs(self.TMP_FOLDER, exist_ok=True)
 
         self.GEO_ID = TripAdvisorHelper().getGeoId(CITY=city)
         self.PARAMS = self.getParams()
 
         self.DATA = data
         self.STEP = step
-        if(data is None):self.ITEMS = len(data)
+        if(data is None):
+            self.ITEMS = len(data)
 
         pd.set_option('display.max_rows', 10)
         pd.set_option('display.max_columns', 500)
@@ -179,37 +188,37 @@ class TripAdvisor(threading.Thread):
     def run(self):
         print("Starting " + self.name)
 
-        #Descargar lista de restaurantes...
-        if(self.STEP==0):
+        # Descargar lista de restaurantes...
+        if(self.STEP == 0):
             self.downloadRestaurants()
-        #Descargar reviews...
-        elif(self.STEP==1):
+        # Descargar reviews...
+        elif(self.STEP == 1):
             self.downloadReviewData()
 
-        #Completar reviews...
-        elif(self.STEP==2):
+        # Completar reviews...
+        elif(self.STEP == 2):
             self.completeReviews()
 
-        #Descargar imágenes...
-        elif(self.STEP==3):
+        # Descargar imágenes...
+        elif(self.STEP == 3):
             self.downloadImages()
 
         print("Exiting " + self.name)
 
-    #-------------------------------------------------------------------------------------------------------------------
+    # -------------------------------------------------------------------------------------------------------------------
 
     def getParams(self):
 
         url = "https://www.tripadvisor.com/RestaurantSearch&geo=" + str(self.GEO_ID)
-        params = { 'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36', }
+        params = {'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36', }
 
         r = requests.get(url, headers=params)
 
         cookieDict = r.cookies.get_dict()
-        cookieDict["TASession"] =cookieDict["TASession"].replace("TRA.true","TRA.false")
+        cookieDict["TASession"] = cookieDict["TASession"].replace("TRA.true", "TRA.false")
 
-        cookieDict={"TAUnique":"%1%enc%3AP4eDoHhGTx3dk0g9tT58cSIjdxMtLaGxvCpuHkLALKBcZDjTQsqGzA%3D%3D",
-                    "TASession":cookieDict["TASession"]}
+        cookieDict = {"TAUnique": "%1%enc%3AP4eDoHhGTx3dk0g9tT58cSIjdxMtLaGxvCpuHkLALKBcZDjTQsqGzA%3D%3D",
+                      "TASession": cookieDict["TASession"]}
 
         params["Cookie"] = ";".join(['%s=%s' % (name, value) for (name, value) in cookieDict.items()])
         params['cache-control'] = 'no-cache,no-store,must-revalidate'
@@ -222,31 +231,31 @@ class TripAdvisor(threading.Thread):
         def getPage(page):
 
             items_page = 30
-            
+
             url = "https://www.tripadvisor.com/RestaurantSearch?Action=PAGE&geo=" + str(self.GEO_ID) + "&sortOrder=alphabetical&o=a" + str((page) * items_page)+"&ajax=1"
 
             s = requests.Session()
             s.cookies.set_policy(BlockAll())
-            r = s.get(url,headers=self.PARAMS)
+            r = s.get(url, headers=self.PARAMS)
 
-            return PyQuery(r.text),r
+            return PyQuery(r.text), r
 
-        #---------------------------------------------------------------------------------------------------------------
+        # ---------------------------------------------------------------------------------------------------------------
 
         data = []
 
-        fromPage= self.DATA[0]
+        fromPage = self.DATA[0]
         toPage = self.DATA[1]
 
-        for p in range(fromPage,toPage):
-            print("Thread "+str(self.threadID)+": "+str(p+1)+" de "+str(toPage)+ "("+str(len(data))+")")
+        for p in range(fromPage, toPage):
+            print("Thread "+str(self.threadID)+": "+str(p+1)+" de "+str(toPage)+"("+str(len(data))+")")
 
-            pq,r = getPage(p)
+            pq, r = getPage(p)
             rst_in_pg = pq("div[data-test-target='restaurants-list']")
 
             rsts = rst_in_pg("div[data-test$='_list_item']").not_("div[data-test^='SL']")
 
-            while(len(rsts)==0):
+            while(len(rsts) == 0):
                 print("Thread "+str(self.threadID)+" Error: Retrying connection...")
                 time.sleep(5)
 
@@ -265,17 +274,21 @@ class TripAdvisor(threading.Thread):
                 url = self.BASE_URL+r.find("a._15_ydu6b").attr("href")
                 id_r = int(re.findall(r"d(\d+)", url)[0])
                 rating = r.find("svg[title$='bubbles']")
-                
-                if len(rating)>0: rating = int(rating.attr("title").split(" of ")[0].replace(".", ""))
-                else: rating=0
 
-                t_a_p =r("div.MIajtJFg._1cBs8huC._3d9EnJpt span._1p0FLy4t")
+                if len(rating) > 0:
+                    rating = int(rating.attr("title").split(" of ")[0].replace(".", ""))
+                else:
+                    rating = 0
 
-                type_r = []; price = ""
-                if len(t_a_p)==2:
+                t_a_p = r("div.MIajtJFg._1cBs8huC._3d9EnJpt span._1p0FLy4t")
+
+                type_r = []
+                price = ""
+
+                if len(t_a_p) == 2:
                     type_r = t_a_p[0].text.split(", ")
                     price = t_a_p[1].text
-                elif len(t_a_p)==1:
+                elif len(t_a_p) == 1:
                     if("$" in t_a_p[0].text):
                         price = t_a_p[0].text
                     else:
@@ -283,19 +296,18 @@ class TripAdvisor(threading.Thread):
 
                 data.append((id_r, name, self.CITY, price, url, rating, type_r))
 
-                itms_pg+=1
+                itms_pg += 1
 
-            if(itms_pg!=30):
+            if(itms_pg != 30):
                 print("-"*100)
                 print("Thread "+str(self.threadID)+": "+str(itms_pg)+" items in page " + str(p))
                 print("-"*100)
-
 
         data = pd.DataFrame(data, columns=self.rest_cols)
 
         pd.to_pickle(data, self.TMP_FOLDER + "/restaurants-" + str(self.threadID) + ".pkl")
 
-    #-------------------------------------------------------------------------------------------------------------------
+    # -------------------------------------------------------------------------------------------------------------------
 
     def completeReviews(self):
 
@@ -309,25 +321,24 @@ class TripAdvisor(threading.Thread):
 
             data = {'reviews': rev_str, 'widgetChoice': 'EXPANDED_HOTEL_REVIEW_HSX', 'Action': 'install'}
             params = {'Content-Type': 'application/x-www-form-urlencoded'}
-            r = requests.post("https://www.tripadvisor.com/OverlayWidgetAjax?Mode=EXPANDED_HOTEL_REVIEWS&metaReferer=Restaurant_Review",data=data, headers=params)
+            r = requests.post("https://www.tripadvisor.com/OverlayWidgetAjax?Mode=EXPANDED_HOTEL_REVIEWS&metaReferer=Restaurant_Review", data=data, headers=params)
 
             pq = PyQuery(r.text)
             itms = pq.items("div[data-reviewlistingid]")
-
 
             for i in itms:
                 revID = int(i.attr('data-reviewlistingid'))
 
                 userData = i("div.avatar").attr("class").split(" ")
-                if(len(userData)>1):
-                    userID = i("div.avatar").attr("class").split(" ")[1].replace("profile_","")
+                if(len(userData) > 1):
+                    userID = i("div.avatar").attr("class").split(" ")[1].replace("profile_", "")
                     userName = i("div.member_info .username").text()
                     userLocation = i("div.member_info .location").text()
                     usrs.append([userID, userName, userLocation])
                 else:
                     userID = None
 
-                rstID = RV.loc[RV.reviewId==revID].restaurantId.values[0]
+                rstID = RV.loc[RV.reviewId == revID].restaurantId.values[0]
                 url = self.BASE_URL+i(".quote a").attr("href")
 
                 title = i.find('a#rn' + str(revID) + ">span").text()
@@ -338,17 +349,16 @@ class TripAdvisor(threading.Thread):
 
                 images = i.find("div.inlinePhotosWrapper")
 
-                if(len(images)>0):
+                if(len(images) > 0):
                     images = self.getImages(i)
                 else:
                     images = []
 
-                revs.append([revID,userID,rstID,title,text,date,rating,self.LANG,images,url])
+                revs.append([revID, userID, rstID, title, text, date, rating, self.LANG, images, url])
 
+            return revs, usrs
 
-            return revs,usrs
-
-        #---------------------------------------------------------
+        # ---------------------------------------------------------
 
         revs = []
         usrs = []
@@ -366,10 +376,11 @@ class TripAdvisor(threading.Thread):
 
             data_from = i * per_post
             data_to = (i + 1) * per_post
-            if(i==its-1): data_to = total
+            if(i == its-1):
+                data_to = total
 
-            temp_data = RV.iloc[data_from:data_to,:]
-            t_revs,t_usrs = xpanReviews(temp_data)
+            temp_data = RV.iloc[data_from:data_to, :]
+            t_revs, t_usrs = xpanReviews(temp_data)
 
             revs.extend(t_revs)
             usrs.extend(t_usrs)
@@ -383,20 +394,21 @@ class TripAdvisor(threading.Thread):
         pd.to_pickle(revs, self.TMP_FOLDER + "/reviews-" + str(self.threadID) + ".pkl")
         pd.to_pickle(usrs, self.TMP_FOLDER + "/users-" + str(self.threadID) + ".pkl")
 
-    #-------------------------------------------------------------------------------------------------------------------
+    # -------------------------------------------------------------------------------------------------------------------
 
     def downloadImages(self):
 
         def saveImage(path, img_src):
 
             # si está descargada, skip
-            if (os.path.isfile(path)): return True
+            if (os.path.isfile(path)):
+                return True
 
             # gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1)  # Only for gangstars
 
             try:
                 a = urllib.request.urlopen(img_src)
-            except:
+            except Exception:
                 return False
 
             if (a.getcode() != self.SUCCESS_TAG):
@@ -415,8 +427,10 @@ class TripAdvisor(threading.Thread):
 
             ret = images
 
-            if(highRes):path = self.PATH+"images/" + str(revId)
-            else:path = self.PATH+"images_lowres/" + str(revId)
+            if(highRes):
+                path = self.PATH+"images/" + str(revId)
+            else:
+                path = self.PATH+"images_lowres/" + str(revId)
 
             os.makedirs(path, exist_ok=True)
 
@@ -424,18 +438,19 @@ class TripAdvisor(threading.Thread):
                 name = path + "/" + str(item) + ".jpg"
                 url_high_res = i['image_url_lowres']
 
-                #Si ya se descargó y ocupa más de 0 saltar
+                # Si ya se descargó y ocupa más de 0 saltar
                 if os.path.exists(name):
 
-                    if os.stat(name).st_size!=0 :
+                    if os.stat(name).st_size != 0:
 
-                        if(filetype.guess(name).mime!="image/jpeg"):
+                        if(filetype.guess(name).mime != "image/jpeg"):
                             th_img = Image.open(name).convert('RGB')
                             th_img.save(name)
                         else:
                             continue
 
-                    else: os.remove(name)
+                    else:
+                        os.remove(name)
 
                 # Cambiar la URL de la imagen low-res a la high-res
 
@@ -456,7 +471,8 @@ class TripAdvisor(threading.Thread):
                                 # Algunas veces hay que cambiarlo por photo-s
                                 url_high_res = url_high_res.replace("/photo-p/", "/photo-s/")
                                 saved = saveImage(name, url_high_res)
-                                if (not saved): print("\nImg not saved: " + str(url_high_res) + " " + str(rev_url))
+                                if (not saved):
+                                    print("\nImg not saved: " + str(url_high_res) + " " + str(rev_url))
 
                 else:
                     saved = saveImage(name, url_high_res)
@@ -480,9 +496,9 @@ class TripAdvisor(threading.Thread):
             if (len(imgs) > 0):
                 print("Thread " + str(self.threadID) + ": " + str(i + 1) + " de " + str(len(RV)))
 
-                r.images = download(revId, r.url, imgs,highRes=True)
+                r.images = download(revId, r.url, imgs, highRes=True)
 
-    #-------------------------------------------------------------------------------------------------------------------
+    # -------------------------------------------------------------------------------------------------------------------
 
     def downloadReviewData(self):
 
@@ -496,82 +512,84 @@ class TripAdvisor(threading.Thread):
             rest_data = r
             rest_id = r.id
 
-            #Si no hay reviews se salta
-            try:res_hmtl = PyQuery(self.getHtml(r.url))
-            except:
-                print("NO_REVS",r.url)
+            # Si no hay reviews se salta
+            try:
+                res_hmtl = PyQuery(self.getHtml(r.url))
+            except Exception:
+                print("NO_REVS", r.url)
                 continue
 
-            #Si no hay reviews se salta
+            # Si no hay reviews se salta
             pg_revs = res_hmtl.find("div.reviewSelector")
-            if(len(pg_revs)==0):
-                print("NO_REVS",r.url)
+            if(len(pg_revs) == 0):
+                print("NO_REVS", r.url)
                 continue
 
-            #Obtener el número de revs
-            total_num = res_hmtl.find("label[for='filters_detail_language_filterLang_"+self.LANG+"']>span.count")[0].text.replace("(","").replace(")","").replace(",","")
+            # Obtener el número de revs
+            total_num = res_hmtl.find("label[for='filters_detail_language_filterLang_"+self.LANG+"']>span.count")[0].text.replace("(", "").replace(")", "").replace(",", "")
             total_num = int(total_num)
 
-            rv = self.getReviews(res_hmtl, rest_id, rest_data,total_num)
+            rv = self.getReviews(res_hmtl, rest_id, rest_data, total_num)
 
-            if(len(rv)!=total_num):
-                print("ERROR",r.url)
-                print("%d de %d" % (len(rv),total_num))
+            if(len(rv) != total_num):
+                print("ERROR", r.url)
+                print("%d de %d" % (len(rv), total_num))
 
-            revs.extend(list(zip(rv,[r.id]*len(rv))))
-
+            revs.extend(list(zip(rv, [r.id]*len(rv))))
 
         print("Saving...")
 
         revs = pd.DataFrame(revs)
-        revs.columns = ["reviewId","restaurantId"]
+        revs.columns = ["reviewId", "restaurantId"]
 
         pd.to_pickle(revs, self.TMP_FOLDER + "/reviews-"+str(self.threadID)+".pkl")
 
-    def getReviews(self, pq, rest_id, rest_data,total_num):
+    def getReviews(self, pq, rest_id, rest_data, total_num):
 
         ids = []
 
         # Si existe el boton, hay más páginas
-        if (total_num>10):
+        if (total_num > 10):
 
             i = 1
 
             temp_url = rest_data['url']
 
             pages = total_num//10
-            if(total_num%10>0):pages+=1
+            if(total_num % 10 > 0):
+                pages += 1
 
             for p in range(pages):
 
-                #usr_data, rev_data, cont = self.parseReviewPage(pq, temp_url, rest_id, rest_data)
+                # usr_data, rev_data, cont = self.parseReviewPage(pq, temp_url, rest_id, rest_data)
 
-                tmp_ids = list(map(lambda x: int(x.attr("data-reviewid")),pq.items("div.reviewSelector")))
+                tmp_ids = list(map(lambda x: int(x.attr("data-reviewid")), pq.items("div.reviewSelector")))
                 ids.extend(tmp_ids)
 
-                #revs = revs.append(rev_data)
-                #usrs = usrs.append(usr_data)
+                # revs = revs.append(rev_data)
+                # usrs = usrs.append(usr_data)
 
-                #Si se cortó en medio de la página, son traducciones
-                #if (len(revs)<10): break
-                if (len(tmp_ids)<10): break
+                # Si se cortó en medio de la página, son traducciones
+                # if (len(revs)<10): break
+                if (len(tmp_ids) < 10):
+                    break
 
                 temp_url = rest_data['url'].replace("-Reviews-", "-Reviews-or" + str(i * 10) + "-")
                 i += 1
 
                 try:
                     pq = PyQuery(self.getHtml(temp_url))
-                except:
+                except Exception:
                     print(url)
 
         else:
 
-            #usrs, revs, cont = self.parseReviewPage(pq, rest_data['url'], rest_id, rest_data)
+            # usrs, revs, cont = self.parseReviewPage(pq, rest_data['url'], rest_id, rest_data)
             ids = list(map(lambda x: int(x.attr("data-reviewid")), pq.items("div.reviewSelector")))
 
         return ids
 
-    def parseReviewPage(self,pq, page_url, rest_id, rest_data):
+    def parseReviewPage(self, pq, page_url, rest_id, rest_data):
 
         rev_data = pd.DataFrame(columns=self.review_cols)
         usr_data = pd.DataFrame(columns=self.user_cols)
@@ -621,15 +639,15 @@ class TripAdvisor(threading.Thread):
 
         return usr_data, rev_data, 1
 
-    def getImages(self,dt):
+    def getImages(self, dt):
 
-            ret = []
+        ret = []
 
-            for img in dt.items("noscript>img.centeredImg.noscript"):
-                ret.append({"image_url_lowres": img.attr("src"), "image_path": "", "image_high_res": ""})
-            return ret
+        for img in dt.items("noscript>img.centeredImg.noscript"):
+            ret.append({"image_url_lowres": img.attr("src"), "image_path": "", "image_high_res": ""})
+        return ret
 
-    def appendPickle(self,itm, name):
+    def appendPickle(self, itm, name):
 
         if os.path.isfile(name):
             file = pd.read_pickle(name)
@@ -638,27 +656,25 @@ class TripAdvisor(threading.Thread):
         else:
             pd.to_pickle(itm, name)
 
-    def getHtml(self,url):
+    def getHtml(self, url):
 
         data = {'filterLang': self.LANG,
                 "changeSet": "REVIEW_LIST"
                 }
 
-        #Reintentar la petición mientras no se obtenga resultado
+        # Reintentar la petición mientras no se obtenga resultado
 
         r = ''
         while r == '':
             try:
                 r = requests.post(url, data=data, headers=self.PARAMS)
                 break
-            except:
+            except Exception:
                 time.sleep(5)
                 continue
-
 
         html = r.text
 
         r.close()
 
         return html
-
