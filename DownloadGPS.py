@@ -2,7 +2,7 @@ from pyquery import PyQuery as pq
 from tqdm import tqdm
 import pandas as pd
 import numpy as np
-import re
+import re 
 
 regex = r"\"coords\":\"(-?\d+\.\d+),(-?\d+\.\d+)\""
 path = "/media/nas/pperez/data/TripAdvisor/malaga_data/"
