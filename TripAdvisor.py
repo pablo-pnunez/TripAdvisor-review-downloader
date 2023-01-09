@@ -57,7 +57,7 @@ class TripAdvisorHelper():
         if(len(revs) > 0):
             pd.to_pickle(revs, "revIDS-"+CITY.lower().replace(" ", "")+".pkl")
 
-        # Eliminar los ficheros de la carpeta.
+        # Delete the files in the folder.
         for f in os.listdir(tmp_folder):
             if(("reviews-" in f) and (".pkl" in f)):
                 os.remove(tmp_folder+"/"+f)
@@ -89,7 +89,7 @@ class TripAdvisorHelper():
         pd.to_pickle(revs, "reviews-"+CITY.lower().replace(" ", "")+".pkl")
         pd.to_pickle(usrs, "users-"+CITY.lower().replace(" ", "")+".pkl")
 
-        # Eliminar los ficheros de la carpeta.
+        # Delete the files in the folder.
         for f in os.listdir(TripAdvisor.TMP_FOLDER):
             if((".pkl" in f) and (("reviews-" in f) or ("users-" in f))):
                 os.remove(tmp_folder + "/" + f)
@@ -118,7 +118,7 @@ class TripAdvisorHelper():
             rest = rest.drop_duplicates("id")
             pd.to_pickle(rest, "restaurants-"+CITY.lower().replace(" ", "")+".pkl")
 
-        # Eliminar los ficheros de la carpeta.
+        # Delete the files in the folder.
         for f in os.listdir(tmp_folder):
             if (("restaurants-" in f) and (".pkl" in f)):
                 os.remove(tmp_folder + "/" + f)
@@ -188,18 +188,18 @@ class TripAdvisor(threading.Thread):
     def run(self):
         print("Starting " + self.name)
 
-        # Descargar lista de restaurantes...
+        # Download list of restaurants...
         if(self.STEP == 0):
             self.downloadRestaurants()
-        # Descargar reviews...
+        # Download reviews...
         elif(self.STEP == 1):
             self.downloadReviewData()
 
-        # Completar reviews...
+        # Extend reviews...
         elif(self.STEP == 2):
             self.completeReviews()
 
-        # Descargar imágenes...
+        # Download images...
         elif(self.STEP == 3):
             self.downloadImages()
 
@@ -400,7 +400,7 @@ class TripAdvisor(threading.Thread):
 
         def saveImage(path, img_src):
 
-            # si está descargada, skip
+            # if downloaded, skip
             if (os.path.isfile(path)):
                 return True
 
@@ -438,7 +438,7 @@ class TripAdvisor(threading.Thread):
                 name = path + "/" + str(item) + ".jpg"
                 url_high_res = i['image_url_lowres']
 
-                # Si ya se descargó y ocupa más de 0 saltar
+                # If it has already been downloaded and occupies more than 0 skip
                 if os.path.exists(name):
 
                     if os.stat(name).st_size != 0:
@@ -452,7 +452,7 @@ class TripAdvisor(threading.Thread):
                     else:
                         os.remove(name)
 
-                # Cambiar la URL de la imagen low-res a la high-res
+                # Change the URL from low-res to high-res image
 
                 if(highRes):
                     url_high_res = url_high_res.replace("/photo-l/", "/photo-o/")
@@ -460,15 +460,15 @@ class TripAdvisor(threading.Thread):
 
                     saved = saveImage(name, url_high_res)
                     if (not saved):
-                        # Algunas veces hay que cambiarlo por photo-w
+                        # Sometimes it is necessary to change it to photo-w
                         url_high_res = url_high_res.replace("/photo-o/", "/photo-w/")
                         saved = saveImage(name, url_high_res)
                         if (not saved):
-                            # Algunas veces hay que cambiarlo por photo-p
+                            # Sometimes it is necessary to change it for photo-p
                             url_high_res = url_high_res.replace("/photo-w/", "/photo-p/")
                             saved = saveImage(name, url_high_res)
                             if (not saved):
-                                # Algunas veces hay que cambiarlo por photo-s
+                                # Sometimes it is necessary to change it for photo-s
                                 url_high_res = url_high_res.replace("/photo-p/", "/photo-s/")
                                 saved = saveImage(name, url_high_res)
                                 if (not saved):
@@ -487,12 +487,12 @@ class TripAdvisor(threading.Thread):
 
         RV = self.DATA
 
-        # Para cada una de las reviews...
+        # For each of the reviews...
         for i, r in RV.iterrows():
             imgs = r.images
             revId = r.reviewId
 
-            # Si tiene imagenes...
+            # If it has images...
             if (len(imgs) > 0):
                 print("Thread " + str(self.threadID) + ": " + str(i + 1) + " de " + str(len(RV)))
 
@@ -512,20 +512,20 @@ class TripAdvisor(threading.Thread):
             rest_data = r
             rest_id = r.id
 
-            # Si no hay reviews se salta
+            # If there are no reviews it is skipped
             try:
                 res_hmtl = PyQuery(self.getHtml(r.url))
             except Exception:
                 print("NO_REVS", r.url)
                 continue
 
-            # Si no hay reviews se salta
+            # If there are no reviews it is skipped
             pg_revs = res_hmtl.find("div.reviewSelector")
             if(len(pg_revs) == 0):
                 print("NO_REVS", r.url)
                 continue
 
-            # Obtener el número de revs
+            # Obtain the number of revs
             total_num = res_hmtl.find("label[for='filters_detail_language_filterLang_"+self.LANG+"']>span.count")[0].text.replace("(", "").replace(")", "").replace(",", "")
             total_num = int(total_num)
 
@@ -548,7 +548,7 @@ class TripAdvisor(threading.Thread):
 
         ids = []
 
-        # Si existe el boton, hay más páginas
+        # If the button exists, there are more pages.
         if (total_num > 10):
 
             i = 1
@@ -569,7 +569,7 @@ class TripAdvisor(threading.Thread):
                 # revs = revs.append(rev_data)
                 # usrs = usrs.append(usr_data)
 
-                # Si se cortó en medio de la página, son traducciones
+                # If cut in the middle of the page, they are translations.
                 # if (len(revs)<10): break
                 if (len(tmp_ids) < 10):
                     break
@@ -596,7 +596,7 @@ class TripAdvisor(threading.Thread):
 
         for rev in pq.items("div.review-container"):
 
-            # Si aparece el banner, no continuar, las demás son traducidas
+            # If the banner appears, do not continue, the others are translated.
             if (rev("div.translationOptions")):
                 return usr_data, rev_data, 0
 
@@ -613,14 +613,14 @@ class TripAdvisor(threading.Thread):
             user_name = rev("div.info_text div")[0].text
             user_loc = rev("div.info_text div strong").text()
 
-            # Ver si se puede expandir
+            # See if it can be expanded
             more = rev("div.prw_rup.prw_reviews_text_summary_hsx>div.entry>p.partial_entry>span.taLnk.ulBlueLinks")
 
-            # Si no se puede expandir, obtener el texto
+            # If not expandable, get text
             if (not more):
                 rev_content = rev("div.prw_rup.prw_reviews_text_summary_hsx>div.entry>p.partial_entry").text()
 
-            # Si hay imagenes, obtener los links
+            # If there are images, get the links
             images = rev("div.inlinePhotosWrapper")
 
             if (images):
@@ -662,7 +662,7 @@ class TripAdvisor(threading.Thread):
                 "changeSet": "REVIEW_LIST"
                 }
 
-        # Reintentar la petición mientras no se obtenga resultado
+        # Retry the request as long as no result is obtained.
 
         r = ''
         while r == '':

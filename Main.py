@@ -146,12 +146,12 @@ def getStats(CITY):
     USRS = pd.read_pickle(FOLDER + "users.pkl")
     RVW = pd.read_pickle(FOLDER + "reviews.pkl")
 
-    #  Añadir columnas con número de imágenes y likes
+    # Add columns with number of images and likes
     RVW["num_images"] = RVW.images.apply(lambda x: len(x))
     RVW["like"] = RVW.rating.apply(lambda x: 1 if x > 30 else 0)
     RVW["restaurantId"] = RVW.restaurantId.astype(int)
 
-    # Añadir columnas a los restaurantes
+    # Add columns for restaurants
     RST["id"] = RST.id.astype(int)
     RST["reviews"] = 0
 
@@ -161,15 +161,15 @@ def getStats(CITY):
     print("Imágenes: " + str(sum(RVW.num_images)))
     print("")
 
-    #  Quedarse con las que tienen imágenes
+    # Keep the ones with images
     RVW = RVW.loc[RVW.num_images > 0]
 
-    #  Para cada restaurante
+    # For each restaurant
     # for i, r in RVW.groupby("restaurantId"):
     #     likes = (sum(r.like) * 100) / len(r)
     #     RST.loc[RST.id == i, ["like_prop", "reviews"]] = likes, len(r)
 
-    #  Quedarse con los que tienen reviews con imágen
+    # Stay with those who have reviews with images
     RST = RST.loc[RST.reviews > 0]
 
     print("Restaurantes (con imágen): ", len(RST))
@@ -198,26 +198,24 @@ def getStats(CITY):
 # CITY = "Gijon"; LANG = 'es'
 CITY = "Malaga"; LANG = 'es'
 
-# Descargar restaurantes
+# 1. Download restaurants
 # --------------------------------------------------------------------------
 # stepOne(CITY)
 # rsts = pd.read_pickle("restaurants-malaga.pkl")
 
-# Descargar reviews
+# 2. Download reviews
 # --------------------------------------------------------------------------
 # stepTwo(CITY,LANG)
 # rvws = pd.read_pickle("revIDS-malaga.pkl")
 
-# Ampliar reviews
+# 3. Expand reviews
 # --------------------------------------------------------------------------
 # stepThree(CITY,LANG)
 
-# Descargar imagenes
+# 4. Download images
 # --------------------------------------------------------------------------
 # stepFour(CITY)
 
-# Obtener estadisticas
 
-getStats(CITY)
-
-# TODO: USERS SIN ID, MISMO RESTAURANTE, 2 ID
+# Obtain stats
+# getStats(CITY)
