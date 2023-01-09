@@ -1,4 +1,4 @@
-# TripAdvisor Data Downloader
+# TripAdvisor Review Downloader
 
 For efficiency, this program ( ```Main.py``` ) splits the data download into four different stages, each of which can be executed in parallel using threads:
 
