@@ -66,7 +66,7 @@ class TripAdvisorRestaurants(TripAdvisor):
 
             out_data_reviews = pd.DataFrame(sum(res_reviews,[]), columns=self.review_cols)
             out_data_users = pd.DataFrame(sum(res_users,[]), columns=self.user_cols)
-            out_data_users = out_data_users.drop_duplicates().sort_values("userId").reset_index(drop=True) # Eliminar duplicados
+            out_data_users = out_data_users.drop_duplicates().reset_index(drop=True) # Eliminar duplicados
 
             pd.to_pickle(out_data_reviews, file_path_reviews)
             pd.to_pickle(out_data_users, file_path_users)
@@ -74,7 +74,7 @@ class TripAdvisorRestaurants(TripAdvisor):
             print(f"{len(out_data_reviews)} reviews have been downloaded for the city of {self.city}")
             print(f"{len(out_data_users)} users have been downloaded for the city of {self.city}")
 
-        return out_data
+        return out_data_reviews, out_data_users
     
     def download_restaurants_from_page(self, page):
         '''Descarga los restaurantes de una página'''
