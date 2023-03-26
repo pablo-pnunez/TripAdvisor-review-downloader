@@ -20,7 +20,7 @@ class TripAdvisor():
         self.city_file_name = self.city.lower().replace(" ", "")
 
         self.lang = lang
-        self.out_path = f"out/{self.city_file_name}/{category}"
+        self.out_path = f"out/{self.city_file_name}/{category}/"
 
         os.makedirs(self.out_path, exist_ok=True)
 
