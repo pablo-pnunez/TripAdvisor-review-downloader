@@ -14,6 +14,7 @@ import urllib
 import re
 import os
 import json
+import math
 from http import cookiejar
 import filetype
 import cv2
@@ -129,8 +130,8 @@ class TripAdvisorHelper():
         headers = {'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36', }
         r = requests.get(url, headers=headers)
         pq = PyQuery(r.text)
-        data = json.loads(pq.find("div#component_39").attr("data-component-props"))
-        data = data["listResultCount"]//30
+        data = json.loads(pq.find('div.react-container.component-widget').attr("data-component-props"))
+        data = math.ceil(data["listResultCount"]/30)
         return data
 
     def getGeoId(self, CITY):
@@ -156,9 +157,9 @@ class TripAdvisor(threading.Thread):
     STEP = None
     ITEMS = None
 
-    rest_cols = ["id", "name", "city", "priceInterval", "url", "rating", "type"]
+    rest_cols = ["restaurantId", "name", "city", "priceInterval", "url", "rating", "type"]
     review_cols = ["reviewId", "userId", "restaurantId", "title", "text", "date", "rating", "language", "images", "url"]
-    user_cols = ["id", "name", "location"]
+    user_cols = ["userId", "name", "location"]
 
     def __init__(self, threadID, name, counter, city="Barcelona", data=None, step=1, lang="es"):
         threading.Thread.__init__(self)
@@ -269,30 +270,31 @@ class TripAdvisor(threading.Thread):
 
                 # if len(r('div.ui_merchandising_pill')) > 0: continue
 
-                name = r.find("a._15_ydu6b").text()
-                name = re.sub(r"\d+\.\s", "", name)
-                url = self.BASE_URL+r.find("a._15_ydu6b").attr("href")
+                name_url_item = r.find("a.Lwqic.Cj.b")
+                name = ". ".join(name_url_item.text().split(". ")[1:])
+                url = self.BASE_URL+name_url_item.attr("href")
                 id_r = int(re.findall(r"d(\d+)", url)[0])
-                rating = r.find("svg[title$='bubbles']")
+
+                rating = r.find("svg[aria-label*='bubbles']")
 
                 if len(rating) > 0:
-                    rating = int(rating.attr("title").split(" of ")[0].replace(".", ""))
+                    rating = int(rating.attr("aria-label").split(" of ")[0].replace(".", ""))
                 else:
                     rating = 0
 
-                t_a_p = r("div.MIajtJFg._1cBs8huC._3d9EnJpt span._1p0FLy4t")
+                type_price = r.find("div.hBcUX.XFrjQ.mIBqD span.SUszq")
 
                 type_r = []
                 price = ""
 
-                if len(t_a_p) == 2:
-                    type_r = t_a_p[0].text.split(", ")
-                    price = t_a_p[1].text
-                elif len(t_a_p) == 1:
-                    if("$" in t_a_p[0].text):
-                        price = t_a_p[0].text
+                if len(type_price) == 2:
+                    type_r = type_price[0].text.split(", ")
+                    price = type_price[1].text
+                elif len(type_price) == 1:
+                    if("$" in type_price[0].text):
+                        price = type_price[0].text
                     else:
-                        type_r = t_a_p[0].text.split(", ")
+                        type_r = type_price[0].text.split(", ")
 
                 data.append((id_r, name, self.CITY, price, url, rating, type_r))
 
@@ -516,7 +518,7 @@ class TripAdvisor(threading.Thread):
             try:
                 res_hmtl = PyQuery(self.getHtml(r.url))
             except Exception:
-                print("NO_REVS", r.url)
+                print("ERROR", r.url)
                 continue
 
             # If there are no reviews it is skipped
@@ -526,8 +528,9 @@ class TripAdvisor(threading.Thread):
                 continue
 
             # Obtain the number of revs
-            total_num = res_hmtl.find("label[for='filters_detail_language_filterLang_"+self.LANG+"']>span.count")[0].text.replace("(", "").replace(")", "").replace(",", "")
-            total_num = int(total_num)
+            # total_num = res_hmtl.find("label[for='filters_detail_language_filterLang_"+self.LANG+"']>span.count")[0].text.replace("(", "").replace(")", "").replace(",", "")
+            # total_num = int(total_num)
+            total_num = int(re.findall(r"\d+",res_hmtl.find("span.reviews_header_count").text())[0])
 
             rv = self.getReviews(res_hmtl, rest_id, rest_data, total_num)
 
@@ -547,16 +550,17 @@ class TripAdvisor(threading.Thread):
     def getReviews(self, pq, rest_id, rest_data, total_num):
 
         ids = []
+        review_per_page = 15
 
         # If the button exists, there are more pages.
-        if (total_num > 10):
+        if (total_num > review_per_page):
 
             i = 1
 
             temp_url = rest_data['url']
 
-            pages = total_num//10
-            if(total_num % 10 > 0):
+            pages = math.ceil(total_num/review_per_page)
+            if(total_num % review_per_page > 0):
                 pages += 1
 
             for p in range(pages):

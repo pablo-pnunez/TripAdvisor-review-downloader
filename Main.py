@@ -14,6 +14,8 @@ from os.path import isfile, join
 import numpy as np
 from http import cookiejar
 
+from src.TripAdvisorRestaurants import TripAdvisorRestaurants
+
 # -----------------------------------------------------------------------------------------------------------------------
 
 
@@ -32,7 +34,7 @@ def stepOne(CITY):
 
     PAGES = TAH.getRestaurantPages(CITY)
 
-    n_threads = 24
+    n_threads = 25
     threads = []
 
     len_data = PAGES
@@ -53,11 +55,11 @@ def stepOne(CITY):
     TAH.joinRestaurants(CITY)
 
 
-def stepTwo(CITY, LANG):
+def  stepTwo(CITY, LANG):
 
     TAH = TripAdvisorHelper()
 
-    n_threads = 24
+    n_threads = 1# 24
     threads = []
 
     data = pd.read_pickle("restaurants-"+CITY.lower().replace(" ", "")+".pkl")
@@ -190,32 +192,33 @@ def getStats(CITY):
 
 # -----------------------------------------------------------------------------------------------------------------------
 
-# CITY = "London"; LANG='en'
-# CITY = "Paris"; LANG = 'fr'
-# CITY = "New York City"; LANG = 'en'
-# CITY = "Madrid"; LANG = 'es'
-# CITY = "Barcelona"; LANG = 'es'
-# CITY = "Gijon"; LANG = 'es'
-CITY = "Malaga"; LANG = 'es'
 
-# 1. Download restaurants
-# --------------------------------------------------------------------------
-# stepOne(CITY)
-# rsts = pd.read_pickle("restaurants-malaga.pkl")
+def main():
 
-# 2. Download reviews
-# --------------------------------------------------------------------------
-# stepTwo(CITY,LANG)
-# rvws = pd.read_pickle("revIDS-malaga.pkl")
+    cities = ["London", "Berlin", "Madrid", "Rome", "Paris", "Bucharest", "Vienna", "Hamburg", "Budapest", "Warsaw"]
 
-# 3. Expand reviews
-# --------------------------------------------------------------------------
-# stepThree(CITY,LANG)
+    cities = ["Gijon"]
 
-# 4. Download images
-# --------------------------------------------------------------------------
-# stepFour(CITY)
+    for city in cities:
+
+        tad_obj = TripAdvisorRestaurants(city=city)
+        tad_obj.download_data()
+
+        # stepTwo(city, lang)
+        # rvws = pd.read_pickle("revIDS-malaga.pkl")
+
+        # 3. Expand reviews
+        # --------------------------------------------------------------------------
+        # stepThree(CITY,LANG)
+
+        # 4. Download images
+        # --------------------------------------------------------------------------
+        # stepFour(CITY)
 
 
-# Obtain stats
-# getStats(CITY)
+        # Obtain stats
+        # getStats(CITY)
+
+
+if __name__ == "__main__":
+    main()
