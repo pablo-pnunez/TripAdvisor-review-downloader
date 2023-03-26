@@ -55,7 +55,7 @@ class TripAdvisor():
         params["X-Requested-With"] = "XMLHttpRequest"
         return(params)
     
-    def parallelize_process(self, data, function, workers=15, threads=True, desc=""):
+    def parallelize_process(self, data, function, workers=15, threads=False, desc=""):
 
         workers = min(workers, len(data))
 
