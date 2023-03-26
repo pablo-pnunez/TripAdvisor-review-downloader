@@ -10,12 +10,12 @@ import os
 import re
 
 
-class TripAdvisorRestaurants(TripAdvisor):
+class TripAdvisorPOIs(TripAdvisor):
     
-    item_cols = ["restaurantId", "name", "city", "priceInterval", "url", "rating", "type"]
+    item_cols = ["itemId", "name", "city", "url", "rating", "categories", "details"]
 
     def __init__(self, city, lang="en"):
-        TripAdvisor.__init__(self, city=city, lang=lang, category="restaurants")
+        TripAdvisor.__init__(self, city=city, lang=lang, category="pois")
 
     def download_data(self):
         '''Descarga todos los datos de una ciudad'''
@@ -26,17 +26,17 @@ class TripAdvisorRestaurants(TripAdvisor):
         reviews = self.download_reviews(items)
 
     def get_item_pages(self):
-        '''Retorna el número de páginas de restaurantes'''
-        url = f"https://www.tripadvisor.es/RestaurantSearch?Action=PAGE&ajax=1&availSearchEnabled=false&sortOrder=alphabetical&geo={self.geo_id}&o=a0"
+        '''Retorna el número de páginas de items'''
+        url = f"https://www.tripadvisor.com/Attractions-g{self.geo_id}-oa0-Activities.html"
         headers = {'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36'}
         r = requests.get(url, headers=headers)
         pq = PyQuery(r.text)
-        data = json.loads(pq.find('div.react-container.component-widget').attr("data-component-props"))
-        data = math.ceil(data["listResultCount"]/30)
+        data = int(pq.find("section[data-automation='WebPresentation_PaginationLinksList']").text().split(" of ")[-1].replace(",", ""))
+        data = math.ceil(data/30)
         return data
 
     def download_items(self):
-        '''Descarga todos los restaurantes'''
+        '''Descarga todos los items'''
 
         file_path = f"{self.out_path}items.pkl"
 
@@ -46,10 +46,10 @@ class TripAdvisorRestaurants(TripAdvisor):
         else:
             num_pages = self.get_item_pages()
             data = list(range(num_pages))
-            results = self.parallelize_process(data=data, function=self.download_items_from_page, desc=f"Items from {self.city}")
+            results = self.parallelize_process( data=data, function=self.download_items_from_page, desc=f"Items from {self.city}")
             out_data = pd.DataFrame(sum(results,[]), columns=self.item_cols)
             pd.to_pickle(out_data, file_path)
-            
+        
         print(f"{len(out_data)} items found in {self.city}")
 
         return out_data
@@ -64,7 +64,7 @@ class TripAdvisorRestaurants(TripAdvisor):
             out_data_reviews = pd.read_pickle(file_path_reviews)
             out_data_users = pd.read_pickle(file_path_users)
         else:
-            results = self.parallelize_process(data=items.values.tolist(), function=self.download_reviews_from_item, desc=f"Reviews from {self.city}")
+            results = self.parallelize_process(workers=1, data=items.values.tolist(), function=self.download_reviews_from_item, desc=f"Reviews from {self.city}")
             res_reviews, res_users = list(zip(*results))
 
             out_data_reviews = pd.DataFrame(sum(res_reviews,[]), columns=self.review_cols)
@@ -80,56 +80,49 @@ class TripAdvisorRestaurants(TripAdvisor):
         return out_data_reviews, out_data_users
     
     def download_items_from_page(self, page):
-        '''Descarga los restaurantes de una página'''
+        '''Descarga los items de una página'''
         
         items_page = 30
-        url = f"https://www.tripadvisor.com/RestaurantSearch?Action=PAGE&geo={self.geo_id}&sortOrder=alphabetical&o=a{page*items_page}&ajax=1"
+        url = f"https://www.tripadvisor.com/Attractions-g{self.geo_id}-oa{page*items_page}-Activities.html"
         s = requests.Session()
         s.cookies.set_policy(BlockAll())
         r = s.get(url, headers=self.request_params)
         pq = PyQuery(r.text)
 
-        rst_in_pg = pq("div[data-test-target='restaurants-list']")
-        rsts = rst_in_pg("div[data-test$='_list_item']").not_("div[data-test^='SL']")
+        itms = pq.find("div[data-part='ListSections'] section[data-automation='WebPresentation_SingleFlexCardSection']")
 
-        if(len(rsts) == 0):
+        if(len(itms) == 0):
             print(f"Error getting items from: {url}")
             raise ValueError
 
         ret_data = []
-        for r in rsts.items():
-            name_url_item = r.find("a.Lwqic.Cj.b")
-            name = ". ".join(name_url_item.text().split(". ")[1:])
-            url = f'{self.base_url}{name_url_item.attr("href")}'
-            id_r = int(re.findall(r"d(\d+)", url)[0])
+        for itm in itms.items():
+            name_url_item = itm.find("header.VLKGO")
+            name = ". ".join(name_url_item.find("span.title").text().split(". ")[1:])
+            url = f'{self.base_url}{name_url_item.find("a").attr("href")}'
+            id_poi = int(re.findall(r"d(\d+)", url)[0])
 
-            rating = r.find("svg[aria-label*='bubbles']")
+            rating = itm.find("svg[aria-label*='bubbles']")
 
             if len(rating) > 0:
                 rating = int(rating.attr("aria-label").split(" of ")[0].replace(".", ""))
             else:
                 rating = 0
 
-            type_price = r.find("div.hBcUX.XFrjQ.mIBqD span.SUszq")
+            category_detail = itm.find("div.alPVI.eNNhq.PgLKC.tnGGX.yzLvM").text()
+            details = ""
+            categories = []
+            if "\n" in category_detail:
+                category_detail = category_detail.split("\n")
+                categories = category_detail[0].split(" • ")
+                details = category_detail[1]
 
-            type_r = []
-            price = ""
-
-            if len(type_price) == 2:
-                type_r = type_price[0].text.split(", ")
-                price = type_price[1].text
-            elif len(type_price) == 1:
-                if("$" in type_price[0].text):
-                    price = type_price[0].text
-                else:
-                    type_r = type_price[0].text.split(", ")
-
-            ret_data.append((id_r, name, self.city, price, url, rating, type_r))
+            ret_data.append((id_poi, name, self.city, url, rating, categories, details))
 
         return ret_data
 
-    def download_reviews_from_item(self, restaurant):
-        restaurant = dict(zip(self.item_cols, restaurant))
+    def download_reviews_from_item(self, item):
+        item = dict(zip(self.item_cols, item))
 
         request_payload = "changeSet=REVIEW_LIST&filterLang=ALL"
         headersList = {
@@ -139,12 +132,12 @@ class TripAdvisorRestaurants(TripAdvisor):
             "cache-control": "no-cache",
             "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
             "origin": "https://www.tripadvisor.com",
-            "referer": restaurant["url"],
+            "referer": item["url"],
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36 Edg/111.0.1661.51",
             "x-requested-with": "XMLHttpRequest" 
         }
         
-        response = requests.request("POST", restaurant["url"], data=request_payload,  headers=headersList)
+        response = requests.request("POST", item["url"], data=request_payload,  headers=headersList)
         pq = PyQuery(response.text)
 
         # Review number (all_langs)
@@ -157,7 +150,7 @@ class TripAdvisorRestaurants(TripAdvisor):
         all_review_codes = []
         # For each page of comments
         for p in range(reviews_pages):
-            page_url = restaurant["url"].replace("-Reviews-", f"-Reviews-or{p*reviews_per_page}-")
+            page_url = item["url"].replace("-Reviews-", f"-Reviews-or{p*reviews_per_page}-")
             response = requests.request("POST", page_url, data=request_payload,  headers=headersList)
             pq = PyQuery(response.text)
 
@@ -210,7 +203,7 @@ class TripAdvisorRestaurants(TripAdvisor):
                 user_name = user_info[0]
                 user_loc = "" if len(user_info)==1 else user_info[1]
 
-                all_reviews.append((review_id, user_id, restaurant["restaurantId"], review_title, review_text, review_date, review_rating, review_lang, review_images, review_url))
+                all_reviews.append((review_id, user_id, item["restaurantId"], review_title, review_text, review_date, review_rating, review_lang, review_images, review_url))
                 all_users.append((user_id, user_name, user_loc))
 
         return all_reviews, all_users

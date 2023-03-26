@@ -10,7 +10,6 @@ from concurrent.futures import ThreadPoolExecutor
 class TripAdvisor():
     
     base_url = "https://www.tripadvisor.com"
-    rest_cols = ["restaurantId", "name", "city", "priceInterval", "url", "rating", "type"]
     review_cols = ["reviewId", "userId", "restaurantId", "title", "text", "date", "rating", "language", "images", "url"]
     user_cols = ["userId", "name", "location"]
 
