@@ -14,17 +14,15 @@ class TripAdvisor():
     review_cols = ["reviewId", "userId", "restaurantId", "title", "text", "date", "rating", "language", "images", "url"]
     user_cols = ["userId", "name", "location"]
 
-    def __init__(self, city, lang="en"):
+    def __init__(self, city, lang="en", category=""):
     
         self.city = city
         self.city_file_name = self.city.lower().replace(" ", "")
 
         self.lang = lang
-        self.out_path = f"out/{self.city_file_name}/"
-        self.tmp_path = self.out_path+"/tmp/"
+        self.out_path = f"out/{self.city_file_name}/{category}"
 
         os.makedirs(self.out_path, exist_ok=True)
-        os.makedirs(self.tmp_path, exist_ok=True)
 
         self.geo_id = self.get_geo_id()
         self.request_params = self.get_request_params()

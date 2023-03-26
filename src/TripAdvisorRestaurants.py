@@ -13,15 +13,15 @@ import re
 class TripAdvisorRestaurants(TripAdvisor):
     
     def __init__(self, city, lang="en"):
-        TripAdvisor.__init__(self, city=city, lang=lang)
+        TripAdvisor.__init__(self, city=city, lang=lang, category="restaurants")
 
     def download_data(self):
         '''Descarga todos los datos de una ciudad'''
 
         # 1. Download restaurants
-        restaurants = self.download_restaurants()
+        items = self.download_items()
         # 2. Download reviews
-        reviews = self.download_reviews(restaurants)
+        reviews = self.download_reviews(items)
 
     def get_restaurant_pages(self):
         '''Retorna el número de páginas de restaurantes'''
@@ -33,10 +33,10 @@ class TripAdvisorRestaurants(TripAdvisor):
         data = math.ceil(data["listResultCount"]/30)
         return data
 
-    def download_restaurants(self):
+    def download_items(self):
         '''Descarga todos los restaurantes'''
 
-        file_path = f"{self.out_path}restaurants.pkl"
+        file_path = f"{self.out_path}items.pkl"
 
         if os.path.exists(file_path):
             print(f"The file {file_path} already exists, loading...")
@@ -51,7 +51,7 @@ class TripAdvisorRestaurants(TripAdvisor):
 
         return out_data
        
-    def download_reviews(self, restaurants):
+    def download_reviews(self, items):
         '''Descarga las reseñas a partir de los restaurantes'''
         file_path_reviews = f"{self.out_path}reviews.pkl"
         file_path_users = f"{self.out_path}users.pkl"
@@ -61,7 +61,7 @@ class TripAdvisorRestaurants(TripAdvisor):
             out_data_reviews = pd.read_pickle(file_path_reviews)
             out_data_users = pd.read_pickle(file_path_users)
         else:
-            results = self.parallelize_process(data=restaurants.values.tolist(), function=self.download_reviews_from_restaurant, desc=f"Reviews from {self.city}")
+            results = self.parallelize_process(data=items.values.tolist(), function=self.download_reviews_from_restaurant, desc=f"Reviews from {self.city}")
             res_reviews, res_users = list(zip(*results))
 
             out_data_reviews = pd.DataFrame(sum(res_reviews,[]), columns=self.review_cols)

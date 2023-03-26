@@ -1,118 +1,11 @@
 # -*- coding: utf-8 -*-
 
-import urllib.request
 import pandas as pd
-import re
-import json
-import os
-import ssl
-import time
-from TripAdvisor import *
-import requests
-from os import listdir
-from os.path import isfile, join
-import numpy as np
-from http import cookiejar
 
 from src.TripAdvisorRestaurants import TripAdvisorRestaurants
+from TripAdvisor import *
 
 # -----------------------------------------------------------------------------------------------------------------------
-
-
-def waitForEnd(threads):
-
-    for i in threads:
-        i.join()
-
-    print("END")
-    print("-"*50)
-
-
-def stepOne(CITY):
-
-    TAH = TripAdvisorHelper()
-
-    PAGES = TAH.getRestaurantPages(CITY)
-
-    n_threads = 25
-    threads = []
-
-    len_data = PAGES
-    len_data_thread = len_data // n_threads
-
-    for i in range(n_threads):
-        data_from = i * len_data_thread
-        data_to = (i + 1) * len_data_thread
-        if (i == n_threads - 1):
-            data_to = len_data
-
-        temp_thread = TripAdvisor(i, "Thread-" + str(i), i, data=[data_from, data_to], city=CITY, step=0)
-        threads.append(temp_thread)
-        threads[i].start()
-
-    waitForEnd(threads)
-
-    TAH.joinRestaurants(CITY)
-
-
-def  stepTwo(CITY, LANG):
-
-    TAH = TripAdvisorHelper()
-
-    n_threads = 1# 24
-    threads = []
-
-    data = pd.read_pickle("restaurants-"+CITY.lower().replace(" ", "")+".pkl")
-    # data = data.loc[data.id==1649152]
-
-    len_data = len(data)
-    len_data_thread = len_data // n_threads
-
-    for i in range(n_threads):
-
-        data_from = i * len_data_thread
-        data_to = (i + 1) * len_data_thread
-        if (i == n_threads - 1):
-            data_to = len_data
-        data_thread = data.iloc[data_from:data_to, :].reset_index()
-
-        temp_thread = TripAdvisor(i, "Thread-" + str(i), i, data=data_thread, city=CITY, step=1, lang=LANG)
-        threads.append(temp_thread)
-        threads[i].start()
-
-    waitForEnd(threads)
-
-    TAH.joinReviews(CITY)
-
-
-def stepThree(CITY, LANG):
-
-    TAH = TripAdvisorHelper()
-
-    n_threads = 20
-    threads = []
-
-    data = pd.read_pickle("revIDS-"+CITY.lower().replace(" ", "")+".pkl")
-    # data = data.loc[(data.title == '') | (data.text.isnull())]  #  Si no tienen titulo o texto
-
-    len_data = len(data)
-    len_data_thread = len_data//n_threads
-
-    for i in range(n_threads):
-
-        data_from = i*len_data_thread
-        data_to = (i+1)*len_data_thread
-        if(i == n_threads-1):
-            data_to = len_data
-        data_thread = data.iloc[data_from:data_to, :].reset_index()
-
-        temp_thread = TripAdvisor(i, "Thread-"+str(i), i, data=data_thread, lang=LANG, city=CITY, step=2)
-        threads.append(temp_thread)
-        threads[i].start()
-
-    waitForEnd(threads)
-    TAH.joinAndAppendFiles(CITY)
-
 
 def stepFour(CITY):
 
@@ -137,7 +30,6 @@ def stepFour(CITY):
         temp_thread = TripAdvisor(i, "Thread-" + str(i), i, city=CITY, data=data_thread, step=3)
         threads.append(temp_thread)
         threads[i].start()
-
 
 def getStats(CITY):
 
@@ -189,9 +81,7 @@ def getStats(CITY):
 
     RET.to_csv("../../stats/user_stats_"+CITY.lower()+".csv")
 
-
 # -----------------------------------------------------------------------------------------------------------------------
-
 
 def main():
 
@@ -203,13 +93,6 @@ def main():
 
         tad_obj = TripAdvisorRestaurants(city=city)
         tad_obj.download_data()
-
-        # stepTwo(city, lang)
-        # rvws = pd.read_pickle("revIDS-malaga.pkl")
-
-        # 3. Expand reviews
-        # --------------------------------------------------------------------------
-        # stepThree(CITY,LANG)
 
         # 4. Download images
         # --------------------------------------------------------------------------
