@@ -13,7 +13,6 @@ import re
 class TripAdvisorPOIs(TripAdvisor):
     
     item_cols = ["itemId", "name", "city", "url", "rating", "categories", "details"]
-    review_cols = ["reviewId", "userId", "restaurantId", "title", "text", "date", "rating", "language", "images", "url"]
 
     def __init__(self, city, lang="en"):
         TripAdvisor.__init__(self, city=city, lang=lang, category="pois")
@@ -24,7 +23,7 @@ class TripAdvisorPOIs(TripAdvisor):
         # 1. Download restaurants
         items = self.download_items()
         # 2. Download reviews
-        # reviews = self.download_reviews(items)
+        reviews = self.download_reviews(items)
 
     def get_item_pages(self):
         '''Retorna el número de páginas de items'''
@@ -65,7 +64,7 @@ class TripAdvisorPOIs(TripAdvisor):
             out_data_reviews = pd.read_pickle(file_path_reviews)
             out_data_users = pd.read_pickle(file_path_users)
         else:
-            results = self.parallelize_process(data=items.values.tolist(), function=self.download_reviews_from_restaurant, desc=f"Reviews from {self.city}")
+            results = self.parallelize_process(workers=1, data=items.values.tolist(), function=self.download_reviews_from_item, desc=f"Reviews from {self.city}")
             res_reviews, res_users = list(zip(*results))
 
             out_data_reviews = pd.DataFrame(sum(res_reviews,[]), columns=self.review_cols)
@@ -122,8 +121,8 @@ class TripAdvisorPOIs(TripAdvisor):
 
         return ret_data
 
-    def download_reviews_from_restaurant(self, restaurant):
-        restaurant = dict(zip(self.rest_cols, restaurant))
+    def download_reviews_from_item(self, item):
+        item = dict(zip(self.item_cols, item))
 
         request_payload = "changeSet=REVIEW_LIST&filterLang=ALL"
         headersList = {
@@ -133,12 +132,12 @@ class TripAdvisorPOIs(TripAdvisor):
             "cache-control": "no-cache",
             "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
             "origin": "https://www.tripadvisor.com",
-            "referer": restaurant["url"],
+            "referer": item["url"],
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36 Edg/111.0.1661.51",
             "x-requested-with": "XMLHttpRequest" 
         }
         
-        response = requests.request("POST", restaurant["url"], data=request_payload,  headers=headersList)
+        response = requests.request("POST", item["url"], data=request_payload,  headers=headersList)
         pq = PyQuery(response.text)
 
         # Review number (all_langs)
@@ -151,7 +150,7 @@ class TripAdvisorPOIs(TripAdvisor):
         all_review_codes = []
         # For each page of comments
         for p in range(reviews_pages):
-            page_url = restaurant["url"].replace("-Reviews-", f"-Reviews-or{p*reviews_per_page}-")
+            page_url = item["url"].replace("-Reviews-", f"-Reviews-or{p*reviews_per_page}-")
             response = requests.request("POST", page_url, data=request_payload,  headers=headersList)
             pq = PyQuery(response.text)
 
@@ -204,7 +203,7 @@ class TripAdvisorPOIs(TripAdvisor):
                 user_name = user_info[0]
                 user_loc = "" if len(user_info)==1 else user_info[1]
 
-                all_reviews.append((review_id, user_id, restaurant["restaurantId"], review_title, review_text, review_date, review_rating, review_lang, review_images, review_url))
+                all_reviews.append((review_id, user_id, item["restaurantId"], review_title, review_text, review_date, review_rating, review_lang, review_images, review_url))
                 all_users.append((user_id, user_name, user_loc))
 
         return all_reviews, all_users

@@ -12,6 +12,8 @@ import re
 
 class TripAdvisorRestaurants(TripAdvisor):
     
+    item_cols = ["restaurantId", "name", "city", "priceInterval", "url", "rating", "type"]
+
     def __init__(self, city, lang="en"):
         TripAdvisor.__init__(self, city=city, lang=lang, category="restaurants")
 
@@ -45,7 +47,7 @@ class TripAdvisorRestaurants(TripAdvisor):
             num_pages = self.get_item_pages()
             data = list(range(num_pages))
             results = self.parallelize_process(data=data, function=self.download_items_from_page, desc=f"Items from {self.city}")
-            out_data = pd.DataFrame(sum(results,[]), columns=self.rest_cols)
+            out_data = pd.DataFrame(sum(results,[]), columns=self.item_cols)
             pd.to_pickle(out_data, file_path)
             
         print(f"{len(out_data)} items found in {self.city}")
@@ -62,7 +64,7 @@ class TripAdvisorRestaurants(TripAdvisor):
             out_data_reviews = pd.read_pickle(file_path_reviews)
             out_data_users = pd.read_pickle(file_path_users)
         else:
-            results = self.parallelize_process(data=items.values.tolist(), function=self.download_reviews_from_restaurant, desc=f"Reviews from {self.city}")
+            results = self.parallelize_process(data=items.values.tolist(), function=self.download_reviews_from_item, desc=f"Reviews from {self.city}")
             res_reviews, res_users = list(zip(*results))
 
             out_data_reviews = pd.DataFrame(sum(res_reviews,[]), columns=self.review_cols)
@@ -126,8 +128,8 @@ class TripAdvisorRestaurants(TripAdvisor):
 
         return ret_data
 
-    def download_reviews_from_restaurant(self, restaurant):
-        restaurant = dict(zip(self.rest_cols, restaurant))
+    def download_reviews_from_item(self, restaurant):
+        restaurant = dict(zip(self.item_cols, restaurant))
 
         request_payload = "changeSet=REVIEW_LIST&filterLang=ALL"
         headersList = {
