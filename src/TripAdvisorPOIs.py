@@ -66,7 +66,7 @@ class TripAdvisorPOIs(TripAdvisor):
             out_data_reviews = pd.read_pickle(file_path_reviews)
             out_data_users = pd.read_pickle(file_path_users)
         else:
-            results = self.parallelize_process(threads=True ,data=items.values.tolist(), function=self.download_reviews_from_item, desc=f"Reviews from {self.city}")
+            results = self.parallelize_process(threads=True, workers=1 ,data=items.values.tolist(), function=self.download_reviews_from_item, desc=f"Reviews from {self.city}")
             res_reviews, res_users = list(zip(*results))
 
             out_data_reviews = pd.DataFrame(sum(res_reviews,[]), columns=self.review_cols)
