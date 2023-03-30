@@ -17,12 +17,13 @@ class TripAdvisor():
     base_url = "https://www.tripadvisor.com"
 
     review_cols = ["reviewId", "userId", "itemId", "title", "text", "date", "rating", "language", "images", "url"]
-    item_cols = ["itemId", "name", "city", "url", "rating", "categories", "details"]
     user_cols = ["userId", "name", "location"]
 
-    def __init__(self, city, lang="en", category=""):
+    def __init__(self, city_query, lang="en", category=""):
     
-        self.city = city
+        self.city_query = city_query
+        self.geo_id, self.city = self.get_city_id_name()
+
         self.city_file_name = self.city.lower().replace(" ", "")
 
         self.lang = lang
@@ -30,16 +31,19 @@ class TripAdvisor():
 
         os.makedirs(self.out_path, exist_ok=True)
 
-        self.geo_id = self.get_geo_id()
         self.request_params = self.get_request_params()
 
-    def get_geo_id(self):
-        url = f"https://www.tripadvisor.com/TypeAheadJson?action=API&query={self.city}"
+    def get_city_id_name(self):
+        url = f"https://www.tripadvisor.com/TypeAheadJson?action=API&query={self.city_query}"
         headers = {'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36'}
         r = requests.get(url, headers=headers)
         response = json.loads(r.text)
-        id = int(response['results'][0]['value'])
-        return id
+        response = [r for r in response["results"] if r["type"]=="GEO"]
+        geo_id = int(response[0]['value'])
+        
+        print(f"Selected city: {response[0]['name']}")
+
+        return geo_id, response[0]["name"].split(", ")[0]
     
     def get_request_params(self):
 

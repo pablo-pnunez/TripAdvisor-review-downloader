@@ -11,8 +11,10 @@ import re
 
 class TripAdvisorRestaurants(TripAdvisor):
     
-    def __init__(self, city, lang="en"):
-        TripAdvisor.__init__(self, city=city, lang=lang, category="restaurants")
+    item_cols = ["itemId", "name", "city", "priceInterval", "url", "rating", "type"]
+
+    def __init__(self, city_query, lang="en"):
+        TripAdvisor.__init__(self, city_query=city_query, lang=lang, category="restaurants")
 
     def download_data(self):
         '''Descarga todos los datos de una ciudad'''

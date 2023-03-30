@@ -87,10 +87,10 @@ def getStats(CITY):
 
 def main():
 
-    # cities = ["Gijon", "Barcelona", "Warsaw", "Budapest", "Hamburg", "Vienna", "Bucharest", "New York", "Paris", "Rome", "Madrid", "Berlin", "London"]
-    # new_cities = ["Gijon", "Barcelona", "Madrid", "Paris"]
-
-    cities = [sys.argv[1]]
+    cities = ["Gijon", "Barcelona", "Warsaw", "Budapest", "Hamburg", "Vienna", "Bucharest", "New York", "Paris", "Rome", "Madrid", "Berlin", "London"]
+    
+    if len(sys.argv) > 0:
+        cities = [sys.argv[1]]
 
     for city in cities:
 
@@ -98,10 +98,10 @@ def main():
         print(city)
         print("-"*50)
 
-        # tad_rst_obj = TripAdvisorRestaurants(city=city)
-        # tad_rst_obj.download_data()
+        tad_rst_obj = TripAdvisorRestaurants(city_query=city)
+        tad_rst_obj.download_data()
 
-        tad_poi_obj = TripAdvisorPOIs(city=city)
+        tad_poi_obj = TripAdvisorPOIs(city_query=city)
         tad_poi_obj.download_data()
 
         # 4. Download images

@@ -14,10 +14,11 @@ import re
 
 
 class TripAdvisorPOIs(TripAdvisor):
-    
+        
+    item_cols = ['itemId', 'name', 'city', 'url', 'rating', 'categories', 'details']
 
-    def __init__(self, city, lang="en"):
-        TripAdvisor.__init__(self, city=city, lang=lang, category="pois")
+    def __init__(self, city_query, lang="en"):
+        TripAdvisor.__init__(self, city_query=city_query, lang=lang, category="pois")
 
         self.temp_path = f"{self.out_path}/tmp/"
         os.makedirs(self.temp_path, exist_ok=True)
@@ -156,7 +157,10 @@ class TripAdvisorPOIs(TripAdvisor):
             response = requests.request("POST", reqUrl, data=payload,  headers=headersList)
             data = json.loads(response.text)[0]["data"]["Result"][0]["detailSectionGroups"]
             if len(data)==0: 
-                print("Error downloading data, retrying...")
+                print(f"Error downloading data, retrying...({item_id})")
+                print("-"*50)
+                print(response.text)
+                print("-"*50)
                 time.sleep(1)
         
         data = data[0]["detailSections"][0]["tabs"][0]["content"]
