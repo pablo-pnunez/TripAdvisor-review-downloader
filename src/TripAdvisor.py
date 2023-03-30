@@ -1,16 +1,22 @@
-import os
-import json
-import requests
-
-from tqdm import tqdm
-from http import cookiejar
-from multiprocessing import Pool
 from concurrent.futures import ThreadPoolExecutor
+
+from multiprocessing import Pool
+from pyquery import PyQuery
+from http import cookiejar
+from tqdm import tqdm
+import pandas as pd
+import numpy as np
+import requests
+import json
+import os
+import re
 
 class TripAdvisor():
     
     base_url = "https://www.tripadvisor.com"
-    review_cols = ["reviewId", "userId", "restaurantId", "title", "text", "date", "rating", "language", "images", "url"]
+
+    review_cols = ["reviewId", "userId", "itemId", "title", "text", "date", "rating", "language", "images", "url"]
+    item_cols = ["itemId", "name", "city", "url", "rating", "categories", "details"]
     user_cols = ["userId", "name", "location"]
 
     def __init__(self, city, lang="en", category=""):
@@ -52,7 +58,7 @@ class TripAdvisor():
         params["X-Requested-With"] = "XMLHttpRequest"
         return(params)
     
-    def parallelize_process(self, data, function, workers=15, threads=False, desc=""):
+    def parallelize_process(self, data, function, workers=24, threads=False, desc=""):
 
         workers = min(workers, len(data))
 
@@ -67,6 +73,74 @@ class TripAdvisor():
                 results = list(tqdm(pool.imap(function, data), total=len(data), desc=desc))
         
         return results
+
+    def expand_reviews_from_id(self, all_review_codes, item_url, batch_size=50):
+
+        ''' Expand reviews: Se crean batches de 50 ids y se descarga la info ampliada de cada batch'''
+        
+        expand_url = "https://www.tripadvisor.com/OverlayWidgetAjax?Mode=EXPANDED_HOTEL_REVIEWS_RESP"
+        headersList = {
+            "authority": self.base_url,
+            "accept": "text/html, */*",
+            "accept-language": "en-GB,en;q=0.9,en-US;q=0.8,es;q=0.7",
+            "cache-control": "no-cache",
+            "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+            "origin": self.base_url,
+            "referer": item_url,
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36 Edg/111.0.1661.51",
+            "x-requested-with": "XMLHttpRequest" 
+        }
+
+        review_batches = np.array_split(all_review_codes, max(1, len(all_review_codes)//batch_size))
+        
+        item_id = int(re.findall(r"d(\d+)",item_url)[0])
+
+        all_reviews = []
+        all_users = []
+
+        for batch in review_batches:
+            payload = f"reviews={'%2C'.join(batch)}&contextChoice=DETAIL&loadMtHeader=true"
+            response = requests.request("POST", expand_url, data=payload,  headers=headersList)
+            pq = PyQuery(f"<html><head></head><body>{response.text}</body></html>")
+
+            for review in pq.find("body div[data-reviewlistingid]"):
+                #Review info
+                review = PyQuery(review)
+                review.find("div.mgrRspnInline").remove() # Remove owner answers
+
+                review_id = int(review.attr("data-reviewlistingid"))             
+
+                review_title = review.find("div.quote").text()
+                review_text = review.find("p.partial_entry").text()
+
+                review_rating = int(re.search(r'bubble_(\d+)', review.find("span.ui_bubble_rating").attr("class")).group(1))
+                review_url = f'{self.base_url}{review.find("div.quote a").attr("href")}'
+                
+                review_date = review.find("span.ratingDate").attr("title")
+                review_date = pd.to_datetime(review_date , format='%B %d, %Y').date()
+
+                review_lang = self.lang
+                review_translation = review.find("div.prw_reviews_google_translate_button_hsx")
+                if len(review_translation)>0: 
+                    review_lang = re.search(r'sl=(\w+)', review_translation.find("span").attr("data-url")).group(1)
+
+                review_images = list(set([img.attrib["src"] for img in review.find("div.photoContainer img")]))
+
+                # User info
+                user = review.find("div.member_info")
+                
+                user_id = -1
+                if len(user.find("div.memberOverlayLink"))>0:
+                    user_id = user.find("div.memberOverlayLink").attr("id").split("_")[1].split("-")[0]
+                user_info = user.find("div.info_text").text().split("\n")
+                user_name = user_info[0]
+                user_loc = "" if len(user_info)==1 else user_info[1]
+
+
+                all_reviews.append((review_id, user_id, item_id, review_title, review_text, review_date, review_rating, review_lang, review_images, review_url))
+                all_users.append((user_id, user_name, user_loc))
+        
+        return all_reviews, all_users
 
 
 class BlockAll(cookiejar.CookiePolicy):

@@ -86,8 +86,7 @@ def getStats(CITY):
 
 def main():
 
-    # cities = ["London", "Berlin", "Madrid", "Rome", "Paris", "Bucharest", "Vienna", "Hamburg", "Budapest", "Warsaw"]
-    cities = ["Warsaw", "Budapest", "Hamburg", "Vienna", "Bucharest", "Paris", "Rome", "Madrid", "Berlin", "London"]
+    cities = ["Gijon", "Barcelona", "Warsaw", "Budapest", "Hamburg", "Vienna", "Bucharest", "New York", "Paris", "Rome", "Madrid", "Berlin", "London"]
     cities = ["Gijon"]
 
     for city in cities:

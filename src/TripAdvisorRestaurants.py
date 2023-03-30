@@ -2,7 +2,6 @@ from src.TripAdvisor import TripAdvisor, BlockAll
 
 from pyquery import PyQuery
 import pandas as pd
-import numpy as np
 import requests
 import json
 import math
@@ -12,8 +11,6 @@ import re
 
 class TripAdvisorRestaurants(TripAdvisor):
     
-    item_cols = ["restaurantId", "name", "city", "priceInterval", "url", "rating", "type"]
-
     def __init__(self, city, lang="en"):
         TripAdvisor.__init__(self, city=city, lang=lang, category="restaurants")
 
@@ -74,8 +71,8 @@ class TripAdvisorRestaurants(TripAdvisor):
             pd.to_pickle(out_data_reviews, file_path_reviews)
             pd.to_pickle(out_data_users, file_path_users)
 
-            print(f"{len(out_data_reviews)} reviews have been downloaded for the city of {self.city}")
-            print(f"{len(out_data_users)} users have been downloaded for the city of {self.city}")
+        print(f"{len(out_data_reviews)} reviews found in {self.city}")
+        print(f"{len(out_data_users)} users found in {self.city}")
 
         return out_data_reviews, out_data_users
     
@@ -166,51 +163,7 @@ class TripAdvisorRestaurants(TripAdvisor):
             all_review_codes.extend(page_reviews)
 
         # Expand reviews: Se crean batches de 50 ids y se descarga la info ampliada de cada batch
-        expand_url = "https://www.tripadvisor.com/OverlayWidgetAjax?Mode=EXPANDED_HOTEL_REVIEWS_RESP"
-        review_batches = np.array_split(all_review_codes, max(1, review_number//50))
-        
-        all_reviews = []
-        all_users = []
-
-        for batch in review_batches:
-            payload = f"reviews={'%2C'.join(batch)}&contextChoice=DETAIL&loadMtHeader=true"
-            response = requests.request("POST", expand_url, data=payload,  headers=headersList)
-            pq = PyQuery(f"<html><head></head><body>{response.text}</body></html>")
-
-            for review in pq.find("body div[data-reviewlistingid]"):
-                #Review info
-                review = PyQuery(review)
-                review.find("div.mgrRspnInline").remove() # Remove owner answers
-
-                review_id = int(review.attr("data-reviewlistingid"))             
-
-                review_title = review.find("div.quote").text()
-                review_text = review.find("p.partial_entry").text()
-
-                review_rating = int(re.search(r'bubble_(\d+)', review.find("span.ui_bubble_rating").attr("class")).group(1))
-                review_url = f'{self.base_url}{review.find("div.quote a").attr("href")}'
-                
-                review_date = review.find("span.ratingDate").attr("title")
-                review_date = pd.to_datetime(review_date , format='%B %d, %Y').date()
-
-                review_lang = self.lang
-                review_translation = review.find("div.prw_reviews_google_translate_button_hsx")
-                if len(review_translation)>0: 
-                    review_lang = re.search(r'sl=(\w+)', review_translation.find("span").attr("data-url")).group(1)
-
-                review_images = list(set([img.attrib["src"] for img in review.find("div.photoContainer img")]))
-
-                # User info
-                user = review.find("div.member_info")
-                
-                user_id = -1
-                if len(user.find("div.memberOverlayLink"))>0:
-                    user_id = user.find("div.memberOverlayLink").attr("id").split("_")[1].split("-")[0]
-                user_info = user.find("div.info_text").text().split("\n")
-                user_name = user_info[0]
-                user_loc = "" if len(user_info)==1 else user_info[1]
-
-                all_reviews.append((review_id, user_id, restaurant["restaurantId"], review_title, review_text, review_date, review_rating, review_lang, review_images, review_url))
-                all_users.append((user_id, user_name, user_loc))
+        all_reviews, all_users = self.expand_reviews_from_id(all_review_codes, restaurant["url"])
 
         return all_reviews, all_users
+    

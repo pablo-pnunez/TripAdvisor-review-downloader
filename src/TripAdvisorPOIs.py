@@ -1,9 +1,12 @@
 from src.TripAdvisor import TripAdvisor, BlockAll
 
 from pyquery import PyQuery
+from tqdm import tqdm
 import pandas as pd
 import numpy as np
 import requests
+import shutil
+import time
 import json
 import math
 import os
@@ -12,12 +15,13 @@ import re
 
 class TripAdvisorPOIs(TripAdvisor):
     
-    review_cols = ["reviewId", "username", "restaurantId", "title", "text", "date", "rating", "language", "images", "url"]
-    item_cols = ["itemId", "name", "city", "url", "rating", "categories", "details"]
-    user_cols = ["username", "name", "location"]
 
     def __init__(self, city, lang="en"):
         TripAdvisor.__init__(self, city=city, lang=lang, category="pois")
+
+        self.temp_path = f"{self.out_path}/tmp/"
+        os.makedirs(self.temp_path, exist_ok=True)
+
 
     def download_data(self):
         '''Descarga todos los datos de una ciudad'''
@@ -66,7 +70,7 @@ class TripAdvisorPOIs(TripAdvisor):
             out_data_reviews = pd.read_pickle(file_path_reviews)
             out_data_users = pd.read_pickle(file_path_users)
         else:
-            results = self.parallelize_process(threads=True, workers=1 ,data=items.values.tolist(), function=self.download_reviews_from_item, desc=f"Reviews from {self.city}")
+            results = self.parallelize_process(data=items.values.tolist(), function=self.download_reviews_from_item, desc=f"Reviews from {self.city}")
             res_reviews, res_users = list(zip(*results))
 
             out_data_reviews = pd.DataFrame(sum(res_reviews,[]), columns=self.review_cols)
@@ -75,9 +79,11 @@ class TripAdvisorPOIs(TripAdvisor):
 
             pd.to_pickle(out_data_reviews, file_path_reviews)
             pd.to_pickle(out_data_users, file_path_users)
+            
+        shutil.rmtree(self.temp_path)
 
-            print(f"{len(out_data_reviews)} reviews have been downloaded for the city of {self.city}")
-            print(f"{len(out_data_users)} users have been downloaded for the city of {self.city}")
+        print(f"{len(out_data_reviews)} reviews found in {self.city}")
+        print(f"{len(out_data_users)} users found in {self.city}")
 
         return out_data_reviews, out_data_users
     
@@ -123,15 +129,13 @@ class TripAdvisorPOIs(TripAdvisor):
 
         return ret_data
 
-    def download_reviews_from_item(self, item_page):
-        item_page = dict(zip(self.item_cols, item_page))
-        item_id = item_page["itemId"]
+    def get_review_data_from_url(self, item_id=None, update_token=None, language="all"):
+        
+        if item_id is None: raise ValueError
 
-        all_reviews = []
-        all_users = []
-        
+        data = []
+
         reqUrl = "https://www.tripadvisor.com/data/graphql/ids"
-        
         headersList = {
             "authority": "www.tripadvisor.com",
             "accept": "*/*",
@@ -143,75 +147,113 @@ class TripAdvisorPOIs(TripAdvisor):
             "x-requested-by": "" 
         }
 
-        # Primero obtenemos los lenguajes disponibles
-        updateToken = None
         payload = json.dumps([ { "query": "f537d248719065257f43323534d737e8", "variables": { "request": { 
                                     "routeParameters": { "contentType": "attraction", "contentId": str(item_id) }, 
-                                    "clientState": { "userInput": [ { "inputKey": "language", "inputValues": [ "all" ] } ] }, 
-                                    "updateToken": updateToken }, "currency": "USD", "unitLength": "MILES" } } ])
+                                    "clientState": { "userInput": [ { "inputKey": "language", "inputValues": [ language ] } ] }, 
+                                    "updateToken": update_token }, "currency": "USD", "unitLength": "MILES" } } ])
 
-        response = requests.request("POST", reqUrl, data=payload,  headers=headersList)
-        data = json.loads(response.text)[0]["data"]["Result"][0]["detailSectionGroups"][0]["detailSections"][0]["tabs"][0]["content"]
-        filter_lang_idx = np.argmax(["ReviewsFilterCardWeb" in it["__typename"] for it in data])
-        filters = data[filter_lang_idx]["filterResponse"]["availableFilterGroups"]
-        lang_idx = np.argmax(["language" in f["name"] for f in filters])
-        languages = [f["value"] for f in filters[lang_idx]["filter"]["values"]]
-        languages.remove("all")
+        while len(data)==0:
+            response = requests.request("POST", reqUrl, data=payload,  headers=headersList)
+            data = json.loads(response.text)[0]["data"]["Result"][0]["detailSectionGroups"]
+            if len(data)==0: 
+                print("Error downloading data, retrying...")
+                time.sleep(1)
+        
+        data = data[0]["detailSections"][0]["tabs"][0]["content"]
+        return data
 
-        for current_lang in languages:
-            # Luego, para cada lenguaje, descargamos las reviews
-            updateToken = None
-            current_page = 0
-            total_pages = 1
+    def download_reviews_from_item(self, item_page):
+        item_page = dict(zip(self.item_cols, item_page))
+        item_id = item_page["itemId"]
 
-            while current_page<total_pages:
+        tmp_reviews_path = f"{self.temp_path}r_{item_id}.pkl"
+        tmp_users_path = f"{self.temp_path}u_{item_id}.pkl"
 
-                payload = json.dumps([ { "query": "f537d248719065257f43323534d737e8", "variables": { "request": { 
-                                        "routeParameters": { "contentType": "attraction", "contentId": str(item_id) }, 
-                                        "clientState": { "userInput": [ { "inputKey": "language", "inputValues": [ current_lang ] } ] }, 
-                                        "updateToken": updateToken }, "currency": "USD", "unitLength": "MILES" } } ])
+        if os.path.exists(tmp_reviews_path) and os.path.exists(tmp_users_path):
+            all_reviews = pd.read_pickle(tmp_reviews_path)
+            all_users = pd.read_pickle(tmp_users_path)
+        
+        else:
+            all_reviews = []
+            all_users = []
+            
+            all_review_codes = []
 
-                response = requests.request("POST", reqUrl, data=payload,  headers=headersList)
-                data = json.loads(response.text)[0]["data"]["Result"][0]["detailSectionGroups"][0]["detailSections"][0]["tabs"][0]["content"]
 
-                for item in data:
+            # Primero obtenemos todos los lenguajes existentes        
+            data = self.get_review_data_from_url(item_id)
+            filter_lang_idx = np.argmax(["ReviewsFilterCardWeb" in it["__typename"] for it in data])
+            filters = data[filter_lang_idx]["filterResponse"]["availableFilterGroups"]
+            lang_idx = np.argmax(["language" in f["name"] for f in filters])
+            languages = [f["value"] for f in filters[lang_idx]["filter"]["values"]]
+            languages.remove("all")
 
-                    # Para cada review
-                    if item["__typename"] == "WebPresentation_ReviewCardWeb":
-                        review_id = json.loads(item["trackingKey"])["rid"]
-                        review_title = item["htmlTitle"]["text"]
-                        review_text = item["htmlText"]["text"]
-                        review_rating = item["bubbleRatingNumber"]*10
-                        review_url = f'{self.base_url}{item["cardLink"]["webRoute"]["webLinkUrl"]}'
+            for current_lang in tqdm(languages, desc=f"Reviews from {item_page['name']}"):
+                # Luego, para cada lenguaje, descargamos las reviews
+                updateToken = None
+                current_page = 0
+                total_pages = 1
+                
+                while current_page<total_pages:
 
-                        review_lang = current_lang
+                    data = self.get_review_data_from_url(item_id, updateToken, current_lang)
 
-                        review_images = []
-                        if item["photos"] is not None:
-                            review_images = [f["photo"]["photoSizes"] for f in item["photos"]]
-                        
-                        review_date = item["publishedDate"]["text"].replace("Written ", "")
-                        review_date = pd.to_datetime(review_date , format='%B %d, %Y').date()
+                    for item in data:
 
-                        user_name = item["userProfile"]["displayName"]
-                        user_account = item["userProfile"]["profileRoute"]
-                        if user_account is not None: user_account = user_account["url"].split("/")[-1]
-                        user_location = item["userProfile"]["hometown"]
+                        # Para cada review
+                        if item["__typename"] == "WebPresentation_ReviewCardWeb":
+                            review_id = str(json.loads(item["trackingKey"])["rid"])
+                            all_review_codes.append(review_id)
 
-                        all_reviews.append((review_id, user_account, item_page["itemId"], review_title, review_text, review_date, review_rating, review_lang, review_images, review_url))
-                        all_users.append((user_account, user_name, user_location))
+                            '''
+                            review_title = item["htmlTitle"]["text"]
+                            review_text = item["htmlText"]["text"]
+                            review_rating = item["bubbleRatingNumber"]*10
+                            review_url = f'{self.base_url}{item["cardLink"]["webRoute"]["webLinkUrl"]}'
 
-                    # Para el item que informa sobre las páginas siguientes y anteriores
-                    if item["__typename"] == "WebPresentation_PartialUpdatePaginationLinksListWeb":
-                        current_page = int(item["currentPageNumber"])
-                        page_tokens = { int(link["pageNumber"]):link["updateLink"]["updateToken"] for link in item["links"]}
-                        total_pages = max(page_tokens.keys())
+                            review_lang = current_lang
 
-                        if current_page!=total_pages:
-                            updateToken = page_tokens[current_page+1]
+                            review_images = []
+                            if item["photos"] is not None:
+                                try:
+                                    review_images = [None if f["photo"] is None else f["photo"]["photoSizes"] for f in item["photos"]]
+                                except:
+                                    print(review_url, item["photos"])
+                                    exit()
+                            
+                            review_date = item["publishedDate"]["text"]
+                            if review_date is not None:
+                                review_date = item["publishedDate"]["text"].replace("Written ", "")
+                                review_date = pd.to_datetime(review_date , format='%B %d, %Y').date()
 
-                # Si no hay más que una página
-                if not any(["WebPresentation_PartialUpdatePaginationLinksListWeb" in it["__typename"] for it in data]):
-                    current_page=total_pages
+                            user_name = item["userProfile"]["displayName"]
+                            user_account = item["userProfile"]["profileRoute"]
+                            if user_account is not None: 
+                                user_account = user_account["url"].split("/")[-1]
+                            user_location = item["userProfile"]["hometown"]
+
+                            all_reviews.append((review_id, user_account, item_page["itemId"], review_title, review_text, review_date, review_rating, review_lang, review_images, review_url))
+                            all_users.append((user_account, user_name, user_location))
+                            '''
+
+                        # Para el item que informa sobre las páginas siguientes y anteriores
+                        if item["__typename"] == "WebPresentation_PartialUpdatePaginationLinksListWeb":
+                            current_page = int(item["currentPageNumber"])
+                            page_tokens = { int(link["pageNumber"]):link["updateLink"]["updateToken"] for link in item["links"]}
+                            total_pages = max(page_tokens.keys())
+
+                            if current_page!=total_pages:
+                                updateToken = page_tokens[current_page+1]
+
+                    # Si no hay más que una página
+                    if not any(["WebPresentation_PartialUpdatePaginationLinksListWeb" in it["__typename"] for it in data]):
+                        current_page=total_pages
+
+            all_reviews, all_users = self.expand_reviews_from_id(all_review_codes, item_page["url"])
+
+            pd.to_pickle(all_reviews, tmp_reviews_path)
+            pd.to_pickle(all_users, tmp_users_path)
+
+            print(f"{item_page['name']} downloaded ({len(all_reviews)} reviews)")
 
         return all_reviews, all_users
