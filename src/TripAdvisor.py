@@ -8,6 +8,7 @@ import pandas as pd
 import numpy as np
 import requests
 import json
+import sys
 import os
 import re
 
@@ -65,13 +66,14 @@ class TripAdvisor():
         if threads:  
             with ThreadPoolExecutor(max_workers=workers) as executor:
                 # results = list(executor.map(function, data))
-                results = list(tqdm(executor.map(function, data), total=len(data), desc=desc))
+                results = list(tqdm(executor.map(function, data), total=len(data), desc=desc, file=sys.stdout))
 
         else:
+           
             with Pool(processes=workers) as pool:
                 # results = pool.map(self.download_restaurants_from_page, data)
                 results = list(tqdm(pool.imap(function, data), total=len(data), desc=desc))
-        
+
         return results
 
     def expand_reviews_from_id(self, all_review_codes, item_url, batch_size=50):

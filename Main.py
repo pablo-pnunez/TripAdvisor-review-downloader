@@ -5,6 +5,7 @@ import pandas as pd
 from src.TripAdvisorRestaurants import TripAdvisorRestaurants
 from src.TripAdvisorPOIs import TripAdvisorPOIs
 from TripAdvisor import *
+import sys
 
 # -----------------------------------------------------------------------------------------------------------------------
 
@@ -86,10 +87,16 @@ def getStats(CITY):
 
 def main():
 
-    cities = ["Gijon", "Barcelona", "Warsaw", "Budapest", "Hamburg", "Vienna", "Bucharest", "New York", "Paris", "Rome", "Madrid", "Berlin", "London"]
-    cities = ["Gijon"]
+    # cities = ["Gijon", "Barcelona", "Warsaw", "Budapest", "Hamburg", "Vienna", "Bucharest", "New York", "Paris", "Rome", "Madrid", "Berlin", "London"]
+    # new_cities = ["Gijon", "Barcelona", "Madrid", "Paris"]
+
+    cities = [sys.argv[1]]
 
     for city in cities:
+
+        print("-"*50)        
+        print(city)
+        print("-"*50)
 
         # tad_rst_obj = TripAdvisorRestaurants(city=city)
         # tad_rst_obj.download_data()
