@@ -3,12 +3,12 @@
 MAXTSTS=4
 
 declare -a CITIES=( "Gijon" "Barcelona" "Warsaw" "Budapest" "Hamburg" "Vienna" "Bucharest" "NewYork" "Paris" "Rome" "Madrid" "Berlin" "London" )
-declare -a CITIES=( "Rome" "Berlin" )
+declare -a CITIES=( "Istanbul" "Moscow" "Saint Petersburg, Russia" "Athens")
 
  for CITY in "${CITIES[@]}" ;do
     echo "-$CITY"
    
-    nohup /media/nas/pperez/miniconda3/envs/TripAdvisorDownload/bin/python -u  Main.py $CITY > "download_"$CITY".log" &      
+    nohup /media/nas/pperez/miniconda3/envs/TripAdvisorDownload/bin/python -u  Main.py "$CITY" > "download_$CITY.log" &      
 
     # Si se alcanza el máximo de procesos simultaneos, esperar
     while [ $(jobs -r | wc -l) -eq $MAXTSTS ];

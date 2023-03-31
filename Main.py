@@ -33,63 +33,14 @@ def stepFour(CITY):
         threads.append(temp_thread)
         threads[i].start()
 
-def getStats(CITY):
-
-    FOLDER = "/media/nas/pperez/data/TripAdvisor/%s_data/" % CITY.lower()
-    IMG_FOLDER = FOLDER + "images/"
-
-    RST = pd.read_pickle(FOLDER + "restaurants.pkl")
-    USRS = pd.read_pickle(FOLDER + "users.pkl")
-    RVW = pd.read_pickle(FOLDER + "reviews.pkl")
-
-    # Add columns with number of images and likes
-    RVW["num_images"] = RVW.images.apply(lambda x: len(x))
-    RVW["like"] = RVW.rating.apply(lambda x: 1 if x > 30 else 0)
-    RVW["restaurantId"] = RVW.restaurantId.astype(int)
-
-    # Add columns for restaurants
-    RST["id"] = RST.id.astype(int)
-    RST["reviews"] = 0
-
-    print("Retaurantes: " + str(len(RST.id.unique())))
-    print("Usuarios: " + str(len(USRS.loc[(USRS.id != "")])))
-    print("Reviews: " + str(len(RVW.loc[(RVW.userId != "")])))
-    print("Imágenes: " + str(sum(RVW.num_images)))
-    print("")
-
-    # Keep the ones with images
-    RVW = RVW.loc[RVW.num_images > 0]
-
-    # For each restaurant
-    # for i, r in RVW.groupby("restaurantId"):
-    #     likes = (sum(r.like) * 100) / len(r)
-    #     RST.loc[RST.id == i, ["like_prop", "reviews"]] = likes, len(r)
-
-    # Stay with those who have reviews with images
-    RST = RST.loc[RST.reviews > 0]
-
-    print("Restaurantes (con imágen): ", len(RST))
-    print("Usuarios (con imágen): ", len(RVW.userId.unique()))
-    print("Reviews (con imágen): ", len(RVW))
-    print("")
-    print("Porcentaje de likes: ", sum(RVW.like)/len(RVW)*100)
-
-    RET = pd.DataFrame(columns=['user', 'likes', 'reviews'])
-
-    for i, g in RVW.groupby("userId"):
-        likes = sum(g.like)
-        total = int(len(g))
-        RET = RET.append({"user": i, "likes": likes, "reviews": total}, ignore_index=True)
-
-    RET.to_csv("../../stats/user_stats_"+CITY.lower()+".csv")
-
 # -----------------------------------------------------------------------------------------------------------------------
 
 def main():
 
     cities = ["Gijon", "Barcelona", "Warsaw", "Budapest", "Hamburg", "Vienna", "Bucharest", "New York", "Paris", "Rome", "Madrid", "Berlin", "London"]
-    
-    if len(sys.argv) > 0:
+    cities = ["Istanbul", "Moscow", "Saint Petersburg, Russia", "Athens"]
+
+    if len(sys.argv) > 1:
         cities = [sys.argv[1]]
 
     for city in cities:
@@ -107,10 +58,6 @@ def main():
         # 4. Download images
         # --------------------------------------------------------------------------
         # stepFour(CITY)
-
-
-        # Obtain stats
-        # getStats(CITY)
 
 
 if __name__ == "__main__":
