@@ -16,17 +16,9 @@ class TripAdvisorRestaurants(TripAdvisor):
     def __init__(self, city_query, lang="en"):
         TripAdvisor.__init__(self, city_query=city_query, lang=lang, category="restaurants")
 
-    def download_data(self):
-        '''Descarga todos los datos de una ciudad'''
-
-        # 1. Download restaurants
-        items = self.download_items()
-        # 2. Download reviews
-        reviews = self.download_reviews(items)
-
     def get_item_pages(self):
         '''Retorna el número de páginas de restaurantes'''
-        url = f"https://www.tripadvisor.es/RestaurantSearch?Action=PAGE&ajax=1&availSearchEnabled=false&sortOrder=alphabetical&geo={self.geo_id}&o=a0"
+        url = f"https://www.tripadvisor.es/RestaurantSearch?Action=PAGE&geobroaden=false&ajax=1&availSearchEnabled=false&sortOrder=alphabetical&geo={self.geo_id}&o=a0"
         headers = {'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36'}
         r = requests.get(url, headers=headers)
         pq = PyQuery(r.text)
@@ -82,7 +74,7 @@ class TripAdvisorRestaurants(TripAdvisor):
         '''Descarga los restaurantes de una página'''
         
         items_page = 30
-        url = f"https://www.tripadvisor.com/RestaurantSearch?Action=PAGE&geo={self.geo_id}&sortOrder=alphabetical&o=a{page*items_page}&ajax=1"
+        url = f"https://www.tripadvisor.com/RestaurantSearch?Action=PAGE&geobroaden=false&geo={self.geo_id}&sortOrder=alphabetical&o=a{page*items_page}&ajax=1"
         s = requests.Session()
         s.cookies.set_policy(BlockAll())
         r = s.get(url, headers=self.request_params)

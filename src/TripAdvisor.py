@@ -80,6 +80,26 @@ class TripAdvisor():
 
         return results
 
+    def download_data(self, download_image_files=True):
+        '''Descarga todos los datos de una ciudad'''
+
+        # 1. Download restaurants
+        items = self.download_items()
+        # 2. Download reviews
+        reviews = self.download_reviews(items)
+        # 3. Download images?
+        if download_image_files:
+            self.download_images(reviews)
+
+    def download_items(self):
+        raise NotImplemented
+
+    def download_reviews(self, items):
+        raise NotImplemented
+
+    def download_images(self, reviews):
+        print("-"*50)
+
     def expand_reviews_from_id(self, all_review_codes, item_url, batch_size=50):
 
         ''' Expand reviews: Se crean batches de 50 ids y se descarga la info ampliada de cada batch'''

@@ -23,15 +23,6 @@ class TripAdvisorPOIs(TripAdvisor):
         self.temp_path = f"{self.out_path}/tmp/"
         os.makedirs(self.temp_path, exist_ok=True)
 
-
-    def download_data(self):
-        '''Descarga todos los datos de una ciudad'''
-
-        # 1. Download restaurants
-        items = self.download_items()
-        # 2. Download reviews
-        reviews = self.download_reviews(items)
-
     def get_item_pages(self):
         '''Retorna el número de páginas de items'''
         url = f"https://www.tripadvisor.com/Attractions-g{self.geo_id}-oa0-Activities.html"

@@ -40,6 +40,8 @@ def main():
     cities = ["Gijon", "Barcelona", "Warsaw", "Budapest", "Hamburg", "Vienna", "Bucharest", "New York", "Paris", "Rome", "Madrid", "Berlin", "London"]
     cities = ["Istanbul", "Moscow", "Saint Petersburg, Russia", "Athens"]
 
+    cities = ["Gijon, asturias"]
+
     if len(sys.argv) > 1:
         cities = [sys.argv[1]]
 
@@ -50,10 +52,10 @@ def main():
         print("-"*50)
 
         tad_rst_obj = TripAdvisorRestaurants(city_query=city)
-        tad_rst_obj.download_data()
+        tad_rst_obj.download_data(download_image_files=True)
 
-        tad_poi_obj = TripAdvisorPOIs(city_query=city)
-        tad_poi_obj.download_data()
+        # tad_poi_obj = TripAdvisorPOIs(city_query=city)
+        # tad_poi_obj.download_data()
 
         # 4. Download images
         # --------------------------------------------------------------------------
