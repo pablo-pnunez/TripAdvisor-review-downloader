@@ -1,5 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor
-
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from multiprocessing import Pool
 from functools import partial
 from pyquery import PyQuery
@@ -124,13 +125,15 @@ class TripAdvisor():
             if high_res:
                 img_url, img_content = self.image_url_to_highres(img_url)
             else:
-                img_content = requests.get(img_url).content
+                session = self.retry_session(retries=5)
+                response = session.get(url=img_url)
+                img_content = response.content
 
             if not os.path.exists(img_path):
 
                 with open(img_path, "wb") as f:
                     f.write(img_content)
-                
+
     def image_url_to_highres(self, lowres_url):
         possible_urls = ["o", "w", "m", "p", "s", "i", "f", "l", "t"]
         img_content = None
@@ -142,12 +145,31 @@ class TripAdvisor():
         while i < len(possible_urls) and img_response!=200:
             nm = possible_urls[i]
             new_url = re.sub(r"photo-(\w)", f"photo-{nm}", new_url, 0, re.MULTILINE)
-            response = requests.get(new_url)
+            session = self.retry_session(retries=5)
+            response = session.get(url=new_url)
             img_response = response.status_code
             img_content = response.content
             i+=1
 
+        if i == len(possible_urls):
+            print(lowres_url, flush=True)
+            raise ValueError
+
         return new_url, img_content
+
+    def retry_session(self, retries, session=None, backoff_factor=0.3):
+        session = session or requests.Session()
+        retry = Retry(
+            total=retries,
+            read=retries,
+            connect=retries,
+            backoff_factor=backoff_factor,
+            method_whitelist=False,
+        )
+        adapter = HTTPAdapter(max_retries=retry)
+        session.mount('http://', adapter)
+        session.mount('https://', adapter)
+        return session
 
     def expand_reviews_from_id(self, all_review_codes, item_url, batch_size=50):
 
