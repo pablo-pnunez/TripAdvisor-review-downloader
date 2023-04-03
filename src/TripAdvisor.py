@@ -1,6 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor
 
 from multiprocessing import Pool
+from functools import partial
 from pyquery import PyQuery
 from http import cookiejar
 from tqdm import tqdm
@@ -89,7 +90,7 @@ class TripAdvisor():
         reviews = self.download_reviews(items)
         # 3. Download images?
         if download_image_files:
-            self.download_images(reviews)
+            self.download_images(reviews[0], high_res=True)
 
     def download_items(self):
         raise NotImplemented
@@ -97,8 +98,56 @@ class TripAdvisor():
     def download_reviews(self, items):
         raise NotImplemented
 
-    def download_images(self, reviews):
-        print("-"*50)
+    def download_images(self, reviews, high_res=True):
+        # Solo reviews con foto
+        reviews["n_images"] = reviews["images"].apply(lambda x: len(x))
+        reviews = reviews.loc[reviews["n_images"]>0][["itemId", "reviewId", "images"]]
+        # Crear carpeta de imágenes
+        self.out_img_path = f"{self.out_path}images/"
+        os.makedirs(self.out_img_path, exist_ok=True)
+        # Método que descarga las fotos de una review
+        self.parallelize_process(data=reviews.values.tolist(), function=partial(self.download_images_from_review, high_res=high_res), desc=f"Images from {self.city}")
+    
+    def download_images_from_review(self, review, high_res=True):
+        item_id = review[0]
+        review_id = review[1]
+        images = review[2]
+
+        img_content = None
+
+        review_path = f"{self.out_img_path}{'hd' if high_res else 'sd'}/{item_id}/{review_id}/"
+        os.makedirs(review_path, exist_ok=True)
+
+        for idx_img, img_url in enumerate(images):
+            img_path = f"{review_path}{idx_img:04d}.jpg"
+            
+            if high_res:
+                img_url, img_content = self.image_url_to_highres(img_url)
+            else:
+                img_content = requests.get(img_url).content
+
+            if not os.path.exists(img_path):
+
+                with open(img_path, "wb") as f:
+                    f.write(img_content)
+                
+    def image_url_to_highres(self, lowres_url):
+        possible_urls = ["o", "w", "m", "p", "s", "i", "f", "l", "t"]
+        img_content = None
+        img_response = 404
+
+        new_url = lowres_url
+        i = 0
+
+        while i < len(possible_urls) and img_response!=200:
+            nm = possible_urls[i]
+            new_url = re.sub(r"photo-(\w)", f"photo-{nm}", new_url, 0, re.MULTILINE)
+            response = requests.get(new_url)
+            img_response = response.status_code
+            img_content = response.content
+            i+=1
+
+        return new_url, img_content
 
     def expand_reviews_from_id(self, all_review_codes, item_url, batch_size=50):
 
