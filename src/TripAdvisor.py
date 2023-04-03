@@ -81,7 +81,7 @@ class TripAdvisor():
 
         return results
 
-    def download_data(self, download_image_files=True):
+    def download_data(self, download_image_files=True, high_res_images=True):
         '''Descarga todos los datos de una ciudad'''
 
         # 1. Download restaurants
@@ -90,7 +90,7 @@ class TripAdvisor():
         reviews = self.download_reviews(items)
         # 3. Download images?
         if download_image_files:
-            self.download_images(reviews[0], high_res=True)
+            self.download_images(reviews[0], high_res=high_res_images)
 
     def download_items(self):
         raise NotImplemented

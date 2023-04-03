@@ -9,7 +9,7 @@ def main():
     cities = ["Gijon", "Barcelona", "Warsaw", "Budapest", "Hamburg", "Vienna", "Bucharest", "New York", "Paris", "Rome", "Madrid", "Berlin", "London"]
     cities = ["Istanbul", "Moscow", "Saint Petersburg, Russia", "Athens"]
 
-    cities = ["Boal, asturias"]
+    cities = ["Gijon, asturias"]
 
     if len(sys.argv) > 1:
         cities = [sys.argv[1]]
