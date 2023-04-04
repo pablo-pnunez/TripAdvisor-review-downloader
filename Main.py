@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from src.TripAdvisorRestaurants import TripAdvisorRestaurants
 from src.TripAdvisorPOIs import TripAdvisorPOIs
-from TripAdvisor import *
 import sys
 
 def main():
