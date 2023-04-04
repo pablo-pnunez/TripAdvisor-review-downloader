@@ -1,0 +1,354 @@
+-Barcelona
+-Madrid
+multiprocessing.pool.RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/urllib3/connectionpool.py", line 449, in _make_request
+    six.raise_from(e, None)
+  File "<string>", line 3, in raise_from
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/urllib3/connectionpool.py", line 444, in _make_request
+    httplib_response = conn.getresponse()
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/http/client.py", line 1377, in getresponse
+    response.begin()
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/http/client.py", line 320, in begin
+    version, status, reason = self._read_status()
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/http/client.py", line 281, in _read_status
+    line = str(self.fp.readline(_MAXLINE + 1), "iso-8859-1")
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/socket.py", line 704, in readinto
+    return self._sock.recv_into(b)
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/ssl.py", line 1242, in recv_into
+    return self.read(nbytes, buffer)
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/ssl.py", line 1100, in read
+    return self._sslobj.read(len, buffer)
+socket.timeout: The read operation timed out
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/urllib3/connectionpool.py", line 703, in urlopen
+    httplib_response = self._make_request(
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/urllib3/connectionpool.py", line 451, in _make_request
+    self._raise_timeout(err=e, url=url, timeout_value=read_timeout)
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/urllib3/connectionpool.py", line 340, in _raise_timeout
+    raise ReadTimeoutError(
+urllib3.exceptions.ReadTimeoutError: HTTPSConnectionPool(host='media-cdn.tripadvisor.com', port=443): Read timed out. (read timeout=2)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/requests/adapters.py", line 489, in send
+    resp = conn.urlopen(
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/urllib3/connectionpool.py", line 815, in urlopen
+    return self.urlopen(
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/urllib3/connectionpool.py", line 815, in urlopen
+    return self.urlopen(
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/urllib3/connectionpool.py", line 815, in urlopen
+    return self.urlopen(
+  [Previous line repeated 2 more times]
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/urllib3/connectionpool.py", line 787, in urlopen
+    retries = retries.increment(
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/urllib3/util/retry.py", line 592, in increment
+    raise MaxRetryError(_pool, url, error or ResponseError(cause))
+urllib3.exceptions.MaxRetryError: HTTPSConnectionPool(host='media-cdn.tripadvisor.com', port=443): Max retries exceeded with url: /media/photo-l/08/58/41/fa/asia-gallery.jpg (Caused by ReadTimeoutError("HTTPSConnectionPool(host='media-cdn.tripadvisor.com', port=443): Read timed out. (read timeout=2)"))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/multiprocessing/pool.py", line 125, in worker
+    result = (True, func(*args, **kwds))
+  File "/media/nas/pperez/code/TripAdvisor-review-downloader/src/TripAdvisor.py", line 129, in download_images_from_review
+    response = session.get(url=img_url, timeout=2)
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/requests/sessions.py", line 600, in get
+    return self.request("GET", url, **kwargs)
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/requests/sessions.py", line 587, in request
+    resp = self.send(prep, **send_kwargs)
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/requests/sessions.py", line 701, in send
+    r = adapter.send(request, **kwargs)
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/requests/adapters.py", line 565, in send
+    raise ConnectionError(e, request=request)
+requests.exceptions.ConnectionError: HTTPSConnectionPool(host='media-cdn.tripadvisor.com', port=443): Max retries exceeded with url: /media/photo-l/08/58/41/fa/asia-gallery.jpg (Caused by ReadTimeoutError("HTTPSConnectionPool(host='media-cdn.tripadvisor.com', port=443): Read timed out. (read timeout=2)"))
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/media/nas/pperez/code/TripAdvisor-review-downloader/Main.py", line 30, in <module>
+    main()
+  File "/media/nas/pperez/code/TripAdvisor-review-downloader/Main.py", line 24, in main
+    tad_rst_obj.download_data(download_image_files=True, high_res_images=False)
+  File "/media/nas/pperez/code/TripAdvisor-review-downloader/src/TripAdvisor.py", line 94, in download_data
+multiprocessing.pool.    self.download_images(reviews[0], high_res=high_res_images)
+RemoteTraceback  File "/media/nas/pperez/code/TripAdvisor-review-downloader/src/TripAdvisor.py", line 110, in download_images
+: 
+"""
+Traceback (most recent call last):
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/urllib3/connectionpool.py", line 449, in _make_request
+    six.raise_from(e, None)
+  File "<string>", line 3, in raise_from
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/urllib3/connectionpool.py", line 444, in _make_request
+    httplib_response = conn.getresponse()
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/http/client.py", line 1377, in getresponse
+    response.begin()
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/http/client.py", line 320, in begin
+    version, status, reason = self._read_status()
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/http/client.py", line 281, in _read_status
+    line = str(self.fp.readline(_MAXLINE + 1), "iso-8859-1")
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/socket.py", line 704, in readinto
+    return self._sock.recv_into(b)
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/ssl.py", line 1242, in recv_into
+    return self.read(nbytes, buffer)
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/ssl.py", line 1100, in read
+    return self._sslobj.read(len, buffer)
+socket.timeout: The read operation timed out
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/urllib3/connectionpool.py", line 703, in urlopen
+    httplib_response = self._make_request(
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/urllib3/connectionpool.py", line 451, in _make_request
+    self._raise_timeout(err=e, url=url, timeout_value=read_timeout)
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/urllib3/connectionpool.py", line 340, in _raise_timeout
+    raise ReadTimeoutError(
+urllib3.exceptions.ReadTimeoutError: HTTPSConnectionPool(host='media-cdn.tripadvisor.com', port=443): Read timed out. (read timeout=2)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/requests/adapters.py", line 489, in send
+    resp = conn.urlopen(
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/urllib3/connectionpool.py", line 815, in urlopen
+    return self.urlopen(
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/urllib3/connectionpool.py", line 815, in urlopen
+    return self.urlopen(
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/urllib3/connectionpool.py", line 815, in urlopen
+    return self.urlopen(
+  [Previous line repeated 2 more times]
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/urllib3/connectionpool.py", line 787, in urlopen
+    retries = retries.increment(
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/urllib3/util/retry.py", line 592, in increment
+    raise MaxRetryError(_pool, url, error or ResponseError(cause))
+urllib3.exceptions.MaxRetryError: HTTPSConnectionPool(host='media-cdn.tripadvisor.com', port=443): Max retries exceeded with url: /media/photo-f/0d/54/40/0f/bel-espace-voute.jpg (Caused by ReadTimeoutError("HTTPSConnectionPool(host='media-cdn.tripadvisor.com', port=443): Read timed out. (read timeout=2)"))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/multiprocessing/pool.py", line 125, in worker
+    result = (True, func(*args, **kwds))
+  File "/media/nas/pperez/code/TripAdvisor-review-downloader/src/TripAdvisor.py", line 129, in download_images_from_review
+    response = session.get(url=img_url, timeout=2)
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/requests/sessions.py", line 600, in get
+    return self.request("GET", url, **kwargs)
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/requests/sessions.py", line 587, in request
+    resp = self.send(prep, **send_kwargs)
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/requests/sessions.py", line 701, in send
+    r = adapter.send(request, **kwargs)
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/requests/adapters.py", line 565, in send
+    raise ConnectionError(e, request=request)
+requests.exceptions.ConnectionError: HTTPSConnectionPool(host='media-cdn.tripadvisor.com', port=443): Max retries exceeded with url: /media/photo-f/0d/54/40/0f/bel-espace-voute.jpg (Caused by ReadTimeoutError("HTTPSConnectionPool(host='media-cdn.tripadvisor.com', port=443): Read timed out. (read timeout=2)"))
+"""
+    
+The above exception was the direct cause of the following exception:
+
+self.parallelize_process(data=reviews.values.tolist(), function=partial(self.download_images_from_review, high_res=high_res), desc=f"Images from {self.city}")
+  File "/media/nas/pperez/code/TripAdvisor-review-downloader/src/TripAdvisor.py", line 81, in parallelize_process
+Traceback (most recent call last):
+  File "/media/nas/pperez/code/TripAdvisor-review-downloader/Main.py", line 30, in <module>
+    results = list(tqdm(pool.imap(function, data), total=len(data), desc=desc, file=sys.stdout))
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/tqdm/std.py", line 1178, in __iter__
+    main()
+  File "/media/nas/pperez/code/TripAdvisor-review-downloader/Main.py", line 24, in main
+    tad_rst_obj.download_data(download_image_files=True, high_res_images=False)    
+for obj in iterable:  File "/media/nas/pperez/code/TripAdvisor-review-downloader/src/TripAdvisor.py", line 94, in download_data
+
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/multiprocessing/pool.py", line 870, in next
+    self.download_images(reviews[0], high_res=high_res_images)    
+raise value
+  File "/media/nas/pperez/code/TripAdvisor-review-downloader/src/TripAdvisor.py", line 110, in download_images
+requests.exceptions.ConnectionError: None: Max retries exceeded with url: /media/photo-l/08/58/41/fa/asia-gallery.jpg (Caused by None)
+    self.parallelize_process(data=reviews.values.tolist(), function=partial(self.download_images_from_review, high_res=high_res), desc=f"Images from {self.city}")
+  File "/media/nas/pperez/code/TripAdvisor-review-downloader/src/TripAdvisor.py", line 81, in parallelize_process
+    results = list(tqdm(pool.imap(function, data), total=len(data), desc=desc, file=sys.stdout))
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/tqdm/std.py", line 1178, in __iter__
+    for obj in iterable:
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/multiprocessing/pool.py", line 870, in next
+    raise value
+requests.exceptions.ConnectionError: None: Max retries exceeded with url: /media/photo-f/0d/54/40/0f/bel-espace-voute.jpg (Caused by None)
+-Paris
+-New York
+multiprocessing.pool.RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/urllib3/connectionpool.py", line 449, in _make_request
+    six.raise_from(e, None)
+  File "<string>", line 3, in raise_from
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/urllib3/connectionpool.py", line 444, in _make_request
+    httplib_response = conn.getresponse()
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/http/client.py", line 1377, in getresponse
+    response.begin()
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/http/client.py", line 320, in begin
+    version, status, reason = self._read_status()
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/http/client.py", line 281, in _read_status
+    line = str(self.fp.readline(_MAXLINE + 1), "iso-8859-1")
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/socket.py", line 704, in readinto
+    return self._sock.recv_into(b)
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/ssl.py", line 1242, in recv_into
+    return self.read(nbytes, buffer)
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/ssl.py", line 1100, in read
+    return self._sslobj.read(len, buffer)
+socket.timeout: The read operation timed out
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/urllib3/connectionpool.py", line 703, in urlopen
+    httplib_response = self._make_request(
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/urllib3/connectionpool.py", line 451, in _make_request
+    self._raise_timeout(err=e, url=url, timeout_value=read_timeout)
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/urllib3/connectionpool.py", line 340, in _raise_timeout
+    raise ReadTimeoutError(
+urllib3.exceptions.ReadTimeoutError: HTTPSConnectionPool(host='media-cdn.tripadvisor.com', port=443): Read timed out. (read timeout=2)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/requests/adapters.py", line 489, in send
+    resp = conn.urlopen(
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/urllib3/connectionpool.py", line 815, in urlopen
+    return self.urlopen(
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/urllib3/connectionpool.py", line 815, in urlopen
+    return self.urlopen(
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/urllib3/connectionpool.py", line 815, in urlopen
+    return self.urlopen(
+  [Previous line repeated 2 more times]
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/urllib3/connectionpool.py", line 787, in urlopen
+    retries = retries.increment(
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/urllib3/util/retry.py", line 592, in increment
+    raise MaxRetryError(_pool, url, error or ResponseError(cause))
+urllib3.exceptions.MaxRetryError: HTTPSConnectionPool(host='media-cdn.tripadvisor.com', port=443): Max retries exceeded with url: /media/photo-f/1c/38/54/64/20200226-130907-largejpg.jpg (Caused by ReadTimeoutError("HTTPSConnectionPool(host='media-cdn.tripadvisor.com', port=443): Read timed out. (read timeout=2)"))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/multiprocessing/pool.py", line 125, in worker
+    result = (True, func(*args, **kwds))
+  File "/media/nas/pperez/code/TripAdvisor-review-downloader/src/TripAdvisor.py", line 129, in download_images_from_review
+    response = session.get(url=img_url, timeout=2)
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/requests/sessions.py", line 600, in get
+    return self.request("GET", url, **kwargs)
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/requests/sessions.py", line 587, in request
+    resp = self.send(prep, **send_kwargs)
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/requests/sessions.py", line 701, in send
+    r = adapter.send(request, **kwargs)
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/requests/adapters.py", line 565, in send
+    raise ConnectionError(e, request=request)
+requests.exceptions.ConnectionError: HTTPSConnectionPool(host='media-cdn.tripadvisor.com', port=443): Max retries exceeded with url: /media/photo-f/1c/38/54/64/20200226-130907-largejpg.jpg (Caused by ReadTimeoutError("HTTPSConnectionPool(host='media-cdn.tripadvisor.com', port=443): Read timed out. (read timeout=2)"))
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/media/nas/pperez/code/TripAdvisor-review-downloader/Main.py", line 30, in <module>
+    main()
+  File "/media/nas/pperez/code/TripAdvisor-review-downloader/Main.py", line 24, in main
+    tad_rst_obj.download_data(download_image_files=True, high_res_images=False)
+  File "/media/nas/pperez/code/TripAdvisor-review-downloader/src/TripAdvisor.py", line 94, in download_data
+    self.download_images(reviews[0], high_res=high_res_images)
+  File "/media/nas/pperez/code/TripAdvisor-review-downloader/src/TripAdvisor.py", line 110, in download_images
+    self.parallelize_process(data=reviews.values.tolist(), function=partial(self.download_images_from_review, high_res=high_res), desc=f"Images from {self.city}")
+  File "/media/nas/pperez/code/TripAdvisor-review-downloader/src/TripAdvisor.py", line 81, in parallelize_process
+    results = list(tqdm(pool.imap(function, data), total=len(data), desc=desc, file=sys.stdout))
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/tqdm/std.py", line 1178, in __iter__
+    for obj in iterable:
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/multiprocessing/pool.py", line 870, in next
+    raise value
+requests.exceptions.ConnectionError: None: Max retries exceeded with url: /media/photo-f/1c/38/54/64/20200226-130907-largejpg.jpg (Caused by None)
+multiprocessing.pool.RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/urllib3/connectionpool.py", line 449, in _make_request
+    six.raise_from(e, None)
+  File "<string>", line 3, in raise_from
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/urllib3/connectionpool.py", line 444, in _make_request
+    httplib_response = conn.getresponse()
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/http/client.py", line 1377, in getresponse
+    response.begin()
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/http/client.py", line 320, in begin
+    version, status, reason = self._read_status()
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/http/client.py", line 281, in _read_status
+    line = str(self.fp.readline(_MAXLINE + 1), "iso-8859-1")
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/socket.py", line 704, in readinto
+    return self._sock.recv_into(b)
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/ssl.py", line 1242, in recv_into
+    return self.read(nbytes, buffer)
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/ssl.py", line 1100, in read
+    return self._sslobj.read(len, buffer)
+socket.timeout: The read operation timed out
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/urllib3/connectionpool.py", line 703, in urlopen
+    httplib_response = self._make_request(
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/urllib3/connectionpool.py", line 451, in _make_request
+    self._raise_timeout(err=e, url=url, timeout_value=read_timeout)
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/urllib3/connectionpool.py", line 340, in _raise_timeout
+    raise ReadTimeoutError(
+urllib3.exceptions.ReadTimeoutError: HTTPSConnectionPool(host='media-cdn.tripadvisor.com', port=443): Read timed out. (read timeout=2)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/requests/adapters.py", line 489, in send
+    resp = conn.urlopen(
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/urllib3/connectionpool.py", line 815, in urlopen
+    return self.urlopen(
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/urllib3/connectionpool.py", line 815, in urlopen
+    return self.urlopen(
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/urllib3/connectionpool.py", line 815, in urlopen
+    return self.urlopen(
+  [Previous line repeated 2 more times]
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/urllib3/connectionpool.py", line 787, in urlopen
+    retries = retries.increment(
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/urllib3/util/retry.py", line 592, in increment
+    raise MaxRetryError(_pool, url, error or ResponseError(cause))
+urllib3.exceptions.MaxRetryError: HTTPSConnectionPool(host='media-cdn.tripadvisor.com', port=443): Max retries exceeded with url: /media/photo-l/1f/85/60/c3/brasserie-bofinger.jpg (Caused by ReadTimeoutError("HTTPSConnectionPool(host='media-cdn.tripadvisor.com', port=443): Read timed out. (read timeout=2)"))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/multiprocessing/pool.py", line 125, in worker
+    result = (True, func(*args, **kwds))
+  File "/media/nas/pperez/code/TripAdvisor-review-downloader/src/TripAdvisor.py", line 129, in download_images_from_review
+    response = session.get(url=img_url, timeout=2)
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/requests/sessions.py", line 600, in get
+    return self.request("GET", url, **kwargs)
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/requests/sessions.py", line 587, in request
+    resp = self.send(prep, **send_kwargs)
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/requests/sessions.py", line 701, in send
+    r = adapter.send(request, **kwargs)
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/requests/adapters.py", line 565, in send
+    raise ConnectionError(e, request=request)
+requests.exceptions.ConnectionError: HTTPSConnectionPool(host='media-cdn.tripadvisor.com', port=443): Max retries exceeded with url: /media/photo-l/1f/85/60/c3/brasserie-bofinger.jpg (Caused by ReadTimeoutError("HTTPSConnectionPool(host='media-cdn.tripadvisor.com', port=443): Read timed out. (read timeout=2)"))
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/media/nas/pperez/code/TripAdvisor-review-downloader/Main.py", line 30, in <module>
+    main()
+  File "/media/nas/pperez/code/TripAdvisor-review-downloader/Main.py", line 24, in main
+    tad_rst_obj.download_data(download_image_files=True, high_res_images=False)
+  File "/media/nas/pperez/code/TripAdvisor-review-downloader/src/TripAdvisor.py", line 94, in download_data
+    self.download_images(reviews[0], high_res=high_res_images)
+  File "/media/nas/pperez/code/TripAdvisor-review-downloader/src/TripAdvisor.py", line 110, in download_images
+    self.parallelize_process(data=reviews.values.tolist(), function=partial(self.download_images_from_review, high_res=high_res), desc=f"Images from {self.city}")
+  File "/media/nas/pperez/code/TripAdvisor-review-downloader/src/TripAdvisor.py", line 81, in parallelize_process
+    results = list(tqdm(pool.imap(function, data), total=len(data), desc=desc, file=sys.stdout))
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/site-packages/tqdm/std.py", line 1178, in __iter__
+    for obj in iterable:
+  File "/media/nas/pperez/miniconda3/envs/TripAdvisorDownload/lib/python3.9/multiprocessing/pool.py", line 870, in next
+    raise value
+requests.exceptions.ConnectionError: None: Max retries exceeded with url: /media/photo-l/1f/85/60/c3/brasserie-bofinger.jpg (Caused by None)
+./run.sh: línea 20: error sintáctico cerca del elemento inesperado `done'
+./run.sh: línea 20: `done'
