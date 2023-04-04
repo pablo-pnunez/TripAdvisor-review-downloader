@@ -42,7 +42,7 @@ class TripAdvisorRestaurants(TripAdvisor):
             pd.to_pickle(out_data, file_path)
             
         print(f"{len(out_data)} items found in {self.city}")
-
+        
         return out_data
        
     def download_reviews(self, items):

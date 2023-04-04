@@ -1,9 +1,9 @@
 #!/bin/bash
 
-MAXTSTS=4
+MAXTSTS=2
 
 declare -a CITIES=( "Gijon" "Barcelona" "Warsaw" "Budapest" "Hamburg" "Vienna" "Bucharest" "NewYork" "Paris" "Rome" "Madrid" "Berlin" "London" )
-declare -a CITIES=( "Istanbul" "Moscow" "Saint Petersburg, Russia" "Athens")
+declare -a CITIES=( "Barcelona" "Madrid" "Paris" "New York")
 
  for CITY in "${CITIES[@]}" ;do
     echo "-$CITY"

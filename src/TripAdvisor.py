@@ -78,7 +78,7 @@ class TripAdvisor():
            
             with Pool(processes=workers) as pool:
                 # results = pool.map(self.download_restaurants_from_page, data)
-                results = list(tqdm(pool.imap(function, data), total=len(data), desc=desc))
+                results = list(tqdm(pool.imap(function, data), total=len(data), desc=desc, file=sys.stdout))
 
         return results
 
@@ -107,7 +107,7 @@ class TripAdvisor():
         self.out_img_path = f"{self.out_path}images/"
         os.makedirs(self.out_img_path, exist_ok=True)
         # Método que descarga las fotos de una review
-        self.parallelize_process(data=reviews.values.tolist(), function=partial(self.download_images_from_review, high_res=high_res), desc=f"Images from {self.city}")
+        self.parallelize_process(threads=True, data=reviews.values.tolist(), function=partial(self.download_images_from_review, high_res=high_res), desc=f"Images from {self.city}")
     
     def download_images_from_review(self, review, high_res=True):
         item_id = review[0]
@@ -125,14 +125,16 @@ class TripAdvisor():
             if high_res:
                 img_url, img_content = self.image_url_to_highres(img_url)
             else:
-                session = self.retry_session(retries=5)
-                response = session.get(url=img_url)
+                session = self.retry_session(retries=10)
+                response = session.get(url=img_url, timeout=5)
                 img_content = response.content
 
             if not os.path.exists(img_path):
 
                 with open(img_path, "wb") as f:
                     f.write(img_content)
+
+        return True
 
     def image_url_to_highres(self, lowres_url):
         possible_urls = ["o", "w", "m", "p", "s", "i", "f", "l", "t"]
@@ -145,8 +147,8 @@ class TripAdvisor():
         while i < len(possible_urls) and img_response!=200:
             nm = possible_urls[i]
             new_url = re.sub(r"photo-(\w)", f"photo-{nm}", new_url, 0, re.MULTILINE)
-            session = self.retry_session(retries=5)
-            response = session.get(url=new_url)
+            session = self.retry_session(retries=10)
+            response = session.get(url=new_url, timeout=5)
             img_response = response.status_code
             img_content = response.content
             i+=1
