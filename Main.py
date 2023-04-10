@@ -15,15 +15,13 @@ def main():
 
     for city in cities:
 
-        print("-"*50)        
-        print(city)
-        print("-"*50)
+        print(f"{'-'*50}\n{city}\n{'-'*50}")        
 
         # tad_rst_obj = TripAdvisorRestaurants(city_query=city)
         # tad_rst_obj.download_data(download_image_files=True, high_res_images=False)
 
         tad_poi_obj = TripAdvisorPOIs(city_query=city)
-        tad_poi_obj.download_data(download_image_files=True, high_res_images=False)
+        tad_poi_obj.download_data(download_image_files=False, high_res_images=False)
 
 if __name__ == "__main__":
     main()
