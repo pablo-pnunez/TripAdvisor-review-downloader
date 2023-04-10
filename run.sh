@@ -3,7 +3,7 @@
 MAXTSTS=2
 
 declare -a CITIES=( "Gijon" "Barcelona" "Warsaw" "Budapest" "Hamburg" "Vienna" "Bucharest" "NewYork" "Paris" "Rome" "Madrid" "Berlin" "London" )
-declare -a CITIES=( "Paris" "New York")
+declare -a CITIES=( "Paris")
 
  for CITY in "${CITIES[@]}" ;do
     echo "-$CITY"

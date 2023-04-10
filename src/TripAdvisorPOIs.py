@@ -62,7 +62,10 @@ class TripAdvisorPOIs(TripAdvisor):
             out_data_reviews = pd.read_pickle(file_path_reviews)
             out_data_users = pd.read_pickle(file_path_users)
         else:
-            results = self.parallelize_process(data=items.values.tolist(), function=self.download_reviews_from_item, desc=f"Reviews from {self.city}")
+
+            items = items[items["itemId"]==188151]
+
+            results = self.parallelize_process(workers=1, threads=True, data=items.values.tolist(), function=self.download_reviews_from_item, desc=f"Reviews from {self.city}")
             res_reviews, res_users = list(zip(*results))
 
             out_data_reviews = pd.DataFrame(sum(res_reviews,[]), columns=self.review_cols)
@@ -155,6 +158,7 @@ class TripAdvisorPOIs(TripAdvisor):
                 time.sleep(1)
         
         data = data[0]["detailSections"][0]["tabs"][0]["content"]
+                
         return data
 
     def download_reviews_from_item(self, item_page):
@@ -169,37 +173,46 @@ class TripAdvisorPOIs(TripAdvisor):
             all_users = pd.read_pickle(tmp_users_path)
         
         else:
-           
+            # Obtener los idiomas disponibles. Hay que ir uno por uno para evitar errores
+            available_langs = self.get_review_data_from_url(item_id)
+            available_langs = [s for s in available_langs if s["__typename"]=="WebPresentation_ReviewsFilterCardWeb"][0]
+            available_langs = available_langs["filterResponse"]["availableFilterGroups"]
+            available_langs = [s for s in available_langs if s["__typename"]=="WebPresentation_SingleSelectFilterGroup" and s["filter"]["name"]=="language"][0]
+            available_langs = {l["value"]:{"count":l["count"], "name":l["object"]["simpleText"]} for l in available_langs["filter"]["values"]}
+            del available_langs["all"] # Eliminar All dado que no siempre funciona
+        
+            total_reviews = sum([f["count"] for f in available_langs.values()])
+
             all_review_codes = []
 
-            updateToken = None
-            current_lang = "all"
-            current_page = 0
-            total_pages = 1
-            
-            while current_page<total_pages:
+            for current_lang in tqdm(available_langs, desc=f"Reviews from {item_page['name']} ({total_reviews} revs.)"):
+                updateToken = None
+                current_page = 0
+                total_pages = 1
+                
+                while current_page<total_pages:
 
-                data = self.get_review_data_from_url(item_id, updateToken, current_lang)
+                    data = self.get_review_data_from_url(item_id, updateToken, current_lang)
 
-                for item in data:
+                    for item in data:
 
-                    # Para cada review
-                    if item["__typename"] == "WebPresentation_ReviewCardWeb":
-                        review_id = str(json.loads(item["trackingKey"])["rid"])
-                        all_review_codes.append(review_id)
+                        # Para cada review
+                        if item["__typename"] == "WebPresentation_ReviewCardWeb":
+                            review_id = str(json.loads(item["trackingKey"])["rid"])
+                            all_review_codes.append(review_id)
 
-                    # Para el item que informa sobre las páginas siguientes y anteriores
-                    if item["__typename"] == "WebPresentation_PartialUpdatePaginationLinksListWeb":
-                        current_page = int(item["currentPageNumber"])
-                        page_tokens = { int(link["pageNumber"]):link["updateLink"]["updateToken"] for link in item["links"]}
-                        total_pages = max(page_tokens.keys())
+                        # Para el item que informa sobre las páginas siguientes y anteriores
+                        if item["__typename"] == "WebPresentation_PartialUpdatePaginationLinksListWeb":
+                            current_page = int(item["currentPageNumber"])
+                            page_tokens = { int(link["pageNumber"]):link["updateLink"]["updateToken"] for link in item["links"]}
+                            total_pages = max(page_tokens.keys())
 
-                        if current_page!=total_pages:
-                            updateToken = page_tokens[current_page+1]
+                            if current_page!=total_pages:
+                                updateToken = page_tokens[current_page+1]
 
-                # Si no hay más que una página
-                if not any(["WebPresentation_PartialUpdatePaginationLinksListWeb" in it["__typename"] for it in data]):
-                    current_page=total_pages
+                    # Si no hay más que una página
+                    if not any(["WebPresentation_PartialUpdatePaginationLinksListWeb" in it["__typename"] for it in data]):
+                        current_page=total_pages
 
             # Expand reviews: Se crean batches de 50 ids y se descarga la info ampliada de cada batch
             all_reviews, all_users = self.expand_reviews_from_id(all_review_codes, item_page["url"])
