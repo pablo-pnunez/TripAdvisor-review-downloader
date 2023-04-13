@@ -5,6 +5,7 @@ from tqdm import tqdm
 import pandas as pd
 import numpy as np
 import requests
+import random
 import shutil
 import time
 import json
@@ -63,7 +64,9 @@ class TripAdvisorPOIs(TripAdvisor):
             out_data_users = pd.read_pickle(file_path_users)
         else:
 
-            results = self.parallelize_process(data=items.values.tolist(), function=self.download_reviews_from_item, desc=f"Reviews from {self.city}")
+            items = items.loc[items["itemId"]==190166] # 191052
+
+            results = self.parallelize_process(threads=True, workers=1, data=items.values.tolist(), function=self.download_reviews_from_item, desc=f"Reviews from {self.city}") #  workers=1, threads = True, 
             res_reviews, res_users = list(zip(*results))
 
             out_data_reviews = pd.DataFrame(sum(res_reviews,[]), columns=self.review_cols)
@@ -122,7 +125,7 @@ class TripAdvisorPOIs(TripAdvisor):
 
         return ret_data
 
-    def get_review_data_from_url(self, item_id=None, update_token=None, language="all"):
+    def get_review_data_from_url(self, item_id=None, update_token=None, language=None):
         
         if item_id is None: raise ValueError
 
@@ -140,12 +143,15 @@ class TripAdvisorPOIs(TripAdvisor):
             "x-requested-by": "" 
         }
 
-        payload = json.dumps([ { "query": "f537d248719065257f43323534d737e8", "variables": { "request": { 
+        language_data = [ { "inputKey": "language", "inputValues": [ language ] } ] if language is not None else []
+
+        payload = json.dumps([ { "query": "b1011c99a03ba78771a086be0d7d77ee", "variables": { "request": { 
                                     "routeParameters": { "contentType": "attraction", "contentId": str(item_id) }, 
-                                    "clientState": { "userInput": [ { "inputKey": "language", "inputValues": [ language ] } ] }, 
+                                    "clientState": { "userInput": language_data }, 
                                     "updateToken": update_token }, "currency": "USD", "unitLength": "MILES" } } ])
 
         while len(data)==0:
+            # time.sleep(random.randint(50,100)/100)
             response = requests.request("POST", reqUrl, data=payload,  headers=headersList)
             data = json.loads(response.text)[0]["data"]["Result"][0]["detailSectionGroups"]
             if len(data)==0: 
@@ -155,6 +161,8 @@ class TripAdvisorPOIs(TripAdvisor):
                 print("-"*50)
                 time.sleep(1)
         
+        if language is None:
+            data = [s for s in data if s["clusterId"]=="ReviewsAndQASection"]
         data = data[0]["detailSections"][0]["tabs"][0]["content"]
                 
         return data
@@ -172,8 +180,13 @@ class TripAdvisorPOIs(TripAdvisor):
         
         else:
             # Obtener los idiomas disponibles. Hay que ir uno por uno para evitar errores
-            available_langs = self.get_review_data_from_url(item_id)
-            available_langs = [s for s in available_langs if s["__typename"]=="WebPresentation_ReviewsFilterCardWeb"][0]
+            lang_data = self.get_review_data_from_url(item_id)
+            while lang_data[0]["__typename"] =="WebPresentation_NoContentFallbackCard":
+                print("Retrying...", flush=True)
+                time.sleep(0.25)
+                lang_data = self.get_review_data_from_url(item_id)
+
+            available_langs = [s for s in lang_data if s["__typename"]=="WebPresentation_ReviewsFilterCardWeb"][0]
             available_langs = available_langs["filterResponse"]["availableFilterGroups"]
             available_langs = [s for s in available_langs if s["__typename"]=="WebPresentation_SingleSelectFilterGroup" and s["filter"]["name"]=="language"][0]
             available_langs = {l["value"]:{"count":l["count"], "name":l["object"]["simpleText"]} for l in available_langs["filter"]["values"]}
@@ -181,8 +194,13 @@ class TripAdvisorPOIs(TripAdvisor):
         
             total_reviews = sum([f["count"] for f in available_langs.values()])
 
+            if total_reviews==0:
+                print(item_page, flush=True)
+                exit()
+
             all_review_codes = []
 
+            # Para cada idioma...
             for current_lang in tqdm(available_langs, desc=f"Reviews from {item_page['name']} ({total_reviews} revs.)"):
                 updateToken = None
                 current_page = 0
@@ -198,12 +216,13 @@ class TripAdvisorPOIs(TripAdvisor):
                         if item["__typename"] == "WebPresentation_ReviewCardWeb":
                             review_id = str(json.loads(item["trackingKey"])["rid"])
                             all_review_codes.append(review_id)
+                            print(f"[{current_lang}]({current_page}/{total_pages}) -> {len(all_review_codes)}/{total_reviews}", flush=True)
 
                         # Para el item que informa sobre las páginas siguientes y anteriores
                         if item["__typename"] == "WebPresentation_PartialUpdatePaginationLinksListWeb":
                             current_page = int(item["currentPageNumber"])
                             page_tokens = { int(link["pageNumber"]):link["updateLink"]["updateToken"] for link in item["links"]}
-                            total_pages = max(page_tokens.keys())
+                            total_pages = math.ceil(int(item["totalResults"])/10)# max(page_tokens.keys())
 
                             if current_page!=total_pages:
                                 updateToken = page_tokens[current_page+1]
@@ -219,6 +238,6 @@ class TripAdvisorPOIs(TripAdvisor):
             pd.to_pickle(all_reviews, tmp_reviews_path)
             pd.to_pickle(all_users, tmp_users_path)
 
-            print(f"{item_page['name']} downloaded ({len(all_reviews)} reviews)", flush=True)
+            print(f"{item_page['name']} downloaded ({len(all_reviews)} reviews & {len(all_review_codes)} codes)", flush=True)
 
         return all_reviews, all_users

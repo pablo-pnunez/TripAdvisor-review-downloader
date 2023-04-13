@@ -11,8 +11,10 @@ import numpy as np
 import requests
 import json
 import sys
+import cv2
 import os
 import re
+
 
 class TripAdvisor():
     
@@ -107,7 +109,7 @@ class TripAdvisor():
         self.out_img_path = f"{self.out_path}images/"
         os.makedirs(self.out_img_path, exist_ok=True)
         # Método que descarga las fotos de una review
-        self.parallelize_process(threads=True, data=reviews.values.tolist(), function=partial(self.download_images_from_review, high_res=high_res), desc=f"Images from {self.city}")
+        self.parallelize_process(threads=True, workers=1, data=reviews.values.tolist(), function=partial(self.download_images_from_review, high_res=high_res), desc=f"Images from {self.city}")
     
     def download_images_from_review(self, review, high_res=True):
         item_id = review[0]
@@ -122,18 +124,33 @@ class TripAdvisor():
         for idx_img, img_url in enumerate(images):
             img_path = f"{review_path}{idx_img:04d}.jpg"
             
-            if high_res:
-                img_url, img_content = self.image_url_to_highres(img_url)
-            else:
-                session = self.retry_session(retries=10)
-                response = session.get(url=img_url, timeout=5)
-                img_content = response.content
+            exist = os.path.exists(img_path)
+            verified = False
 
-            if not os.path.exists(img_path):
+            while not exist or not verified:
 
-                with open(img_path, "wb") as f:
-                    f.write(img_content)
+                if not exist:
+                    if high_res:
+                        img_url, img_content = self.image_url_to_highres(img_url)
+                    else:
+                        session = self.retry_session(retries=10)
+                        response = session.get(url=img_url, timeout=5)
+                        img_content = response.content
 
+                    with open(img_path, "wb") as f:
+                        f.write(img_content)
+
+                    exist = os.path.exists(img_path)        
+
+                if not verified:
+                    try:
+                        img = cv2.imread(img_path)
+                        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                        verified = True
+                    except Exception as e:
+                        print(img_path, flush=True)
+                        os.remove(img_path)
+                
         return True
 
     def image_url_to_highres(self, lowres_url):
