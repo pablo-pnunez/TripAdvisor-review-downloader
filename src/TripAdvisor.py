@@ -45,7 +45,7 @@ class TripAdvisor():
         response = [r for r in response["results"] if r["type"]=="GEO"]
         geo_id = int(response[0]['value'])
         
-        print(f"Selected city: {response[0]['name']}")
+        print(f"Selected city: {response[0]['name']} [{geo_id}]")
 
         return geo_id, response[0]["name"].split(", ")[0]
     
@@ -77,7 +77,6 @@ class TripAdvisor():
                 results = list(tqdm(executor.map(function, data), total=len(data), desc=desc, file=sys.stdout))
 
         else:
-           
             with Pool(processes=workers) as pool:
                 # results = pool.map(self.download_restaurants_from_page, data)
                 results = list(tqdm(pool.imap(function, data), total=len(data), desc=desc, file=sys.stdout))
@@ -109,7 +108,7 @@ class TripAdvisor():
         self.out_img_path = f"{self.out_path}images/"
         os.makedirs(self.out_img_path, exist_ok=True)
         # Método que descarga las fotos de una review
-        self.parallelize_process(threads=True, workers=1, data=reviews.values.tolist(), function=partial(self.download_images_from_review, high_res=high_res), desc=f"Images from {self.city}")
+        self.parallelize_process(threads=True, workers=32 ,data=reviews.values.tolist(), function=partial(self.download_images_from_review, high_res=high_res), desc=f"Images from {self.city}")
     
     def download_images_from_review(self, review, high_res=True):
         item_id = review[0]
@@ -142,7 +141,7 @@ class TripAdvisor():
 
                     exist = os.path.exists(img_path)        
 
-                if not verified:
+                if exist and not verified:
                     try:
                         img = cv2.imread(img_path)
                         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)

@@ -64,9 +64,8 @@ class TripAdvisorPOIs(TripAdvisor):
             out_data_users = pd.read_pickle(file_path_users)
         else:
 
-            items = items.loc[items["itemId"]==190166] # 191052
-
-            results = self.parallelize_process(threads=True, workers=1, data=items.values.tolist(), function=self.download_reviews_from_item, desc=f"Reviews from {self.city}") #  workers=1, threads = True, 
+            # items = items.loc[items["itemId"]==190166] # 191052
+            results = self.parallelize_process( data=items.values.tolist(), function=self.download_reviews_from_item, desc=f"Reviews from {self.city}") #  workers=1, threads = True, 
             res_reviews, res_users = list(zip(*results))
 
             out_data_reviews = pd.DataFrame(sum(res_reviews,[]), columns=self.review_cols)
@@ -192,6 +191,9 @@ class TripAdvisorPOIs(TripAdvisor):
             available_langs = {l["value"]:{"count":l["count"], "name":l["object"]["simpleText"]} for l in available_langs["filter"]["values"]}
             del available_langs["all"] # Eliminar All dado que no siempre funciona
         
+            # print(available_langs)
+            # available_langs = {"es":available_langs["es"]}
+
             total_reviews = sum([f["count"] for f in available_langs.values()])
 
             if total_reviews==0:
