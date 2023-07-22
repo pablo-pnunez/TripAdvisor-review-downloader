@@ -20,7 +20,7 @@ class TripAdvisorRestaurants(TripAdvisor):
         '''Retorna el número de páginas de restaurantes'''
         url = f"https://www.tripadvisor.es/RestaurantSearch?Action=PAGE&geobroaden=false&ajax=1&availSearchEnabled=false&sortOrder=alphabetical&geo={self.geo_id}&o=a0"
         headers = {'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36'}
-        r = requests.get(url, headers=headers)
+        r = requests.get(url, headers=headers, proxies=self.get_proxy())
         pq = PyQuery(r.text)
         data = json.loads(pq.find('div.react-container.component-widget').attr("data-component-props"))
         data = math.ceil(data["listResultCount"]/30)
@@ -55,7 +55,7 @@ class TripAdvisorRestaurants(TripAdvisor):
             out_data_reviews = pd.read_pickle(file_path_reviews)
             out_data_users = pd.read_pickle(file_path_users)
         else:
-            results = self.parallelize_process(data=items.values.tolist(), function=self.download_reviews_from_item, desc=f"Reviews from {self.city}")
+            results = self.parallelize_process(threads=True, data=items.values.tolist(), function=self.download_reviews_from_item, desc=f"Reviews from {self.city}")
             res_reviews, res_users = list(zip(*results))
 
             out_data_reviews = pd.DataFrame(sum(res_reviews,[]), columns=self.review_cols)
@@ -77,7 +77,7 @@ class TripAdvisorRestaurants(TripAdvisor):
         url = f"https://www.tripadvisor.com/RestaurantSearch?Action=PAGE&geobroaden=false&geo={self.geo_id}&sortOrder=alphabetical&o=a{page*items_page}&ajax=1"
         s = requests.Session()
         s.cookies.set_policy(BlockAll())
-        r = s.get(url, headers=self.request_params)
+        r = s.get(url, headers=self.request_params, proxies=self.get_proxy(), timeout=10)
         pq = PyQuery(r.text)
 
         rst_in_pg = pq("div[data-test-target='restaurants-list']")
@@ -134,7 +134,7 @@ class TripAdvisorRestaurants(TripAdvisor):
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36 Edg/111.0.1661.51",
             "x-requested-with": "XMLHttpRequest" 
         }
-        response = requests.request("POST", restaurant["url"], data=request_payload,  headers=headersList, timeout=10)
+        response = requests.request("POST", restaurant["url"], data=request_payload,  headers=headersList, timeout=5, proxies=self.get_proxy())
         pq = PyQuery(response.text)
 
         # Review number (all_langs)
@@ -148,7 +148,7 @@ class TripAdvisorRestaurants(TripAdvisor):
         # For each page of comments
         for p in range(reviews_pages):
             page_url = restaurant["url"].replace("-Reviews-", f"-Reviews-or{p*reviews_per_page}-")
-            response = requests.request("POST", page_url, data=request_payload,  headers=headersList)
+            response = requests.request("POST", page_url, data=request_payload,  headers=headersList, proxies=self.get_proxy())
             pq = PyQuery(response.text)
 
             page_reviews = pq.find("div.review-container")

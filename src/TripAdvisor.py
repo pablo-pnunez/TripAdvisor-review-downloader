@@ -9,12 +9,15 @@ from tqdm import tqdm
 import pandas as pd
 import numpy as np
 import requests
+import time
 import json
 import sys
 import cv2
 import os
 import re
 
+import socks
+import socket
 
 class TripAdvisor():
     
@@ -24,10 +27,11 @@ class TripAdvisor():
     user_cols = ["userId", "name", "location"]
 
     def __init__(self, city_query, lang="en", category=""):
-    
-        self.city_query = city_query
-        self.geo_id, self.city = self.get_city_id_name()
 
+        self.city_query = city_query
+        # self.proxy_list = self.__get_proxy_list__()
+
+        self.geo_id, self.city = self.get_city_id_name()
         self.city_file_name = self.city.lower().replace(" ", "")
 
         self.lang = lang
@@ -37,17 +41,80 @@ class TripAdvisor():
 
         self.request_params = self.get_request_params()
 
+    def __check_proxy__(self, proxy):
+        # user_info, proxy_info = proxy.split("//")[1].split("@")
+        # username, password = user_info.split(":")
+        # proxy_host, proxy_port = proxy_info.split(":")
+        # socks.set_default_proxy(socks.SOCKS5, proxy_host, int(proxy_port), username=username, password=password)
+        # socket.socket = socks.socksocket
+
+        url = f"https://www.tripadvisor.es/TypeAheadJson?action=API&query={self.city_query}"
+        headers = {
+            "authority": "www.tripadvisor.es",
+            "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+            "accept-language": "es,en;q=0.9,ca;q=0.8",
+            "cache-control": "no-cache",
+            "cookie": "TADCID=1UPqdWPlu09b-EjjABQCXdElnkGETRW-Svh01l3nWnYOIj6okSgfmCuEPfZBu0TGR9KVzWaOzDL5acOTsbogAigeGOVSMM68qDU; TAUnique=%1%enc%3AUI4cdMFEA15Zy6l8XkIPIMnCFrHmfj6VGIToPozkk%2FIRJhIGgJrf%2FA%3D%3D; TASSK=enc%3AAPR2h99RYFszHUvVNy1crxMzgcucgeKc7mExJljvQpux6AbGTAZ0MnqrZy7iGDfAB21ev9b0zzkLttElAJdQM3srusq9b3gJZY9mfvMxeLpWmnZj9LWWsYFb%2BL7YGmRuYA%3D%3D; SRT=TART_SYNC; ServerPool=C; PMC=V2*MS.94*MD.20230608*LD.20230608; TART=%1%enc%3AWcupfF5CDyBozDGCZZB3leIOthAYtNTzIC7igATejNRVaBgeODxvueEcfKixqpV6OjRpONHHltE%3D; TATravelInfo=V2*A.2*MG.-1*HP.2*FL.3*RS.1; TASID=DB1E39A86DD64A9E82D2F0008421F009; PAC=AE2-m_quBnCu963U31X_ieRBPZI6qqD-saH6yIOVmYFCPmFuBCnvJ6P1rPleLfuVdoLSf44Q1l1fb1FZ143fJE_N8kTMKbM-4dLbzCqErnUSdQmmPA-iWzfV5xa_IsE1jdd_9a33cNKz117xX4o93qF9MD9bRKmfi5hmu7X1Iu0P; TAAUTHEAT=ksNs57W9TfJoJMvJABQCnPHiQaRASfmTxbKSWaoBQjXlIkq0ixkA41i4Vo_ctrKwj5KnWFdpW0j_Ylgl81eYgbNVlQaPUkuX7rtZMEqPxkdm1XeNX8aAszf8sjymWlJPXPd7OQH2ETzpQAEh7fnPUdHjsPjaYOBVTvCuWPsw4kMetC9Iucw2MHAQQCFAplxDYUHM2-QCXPnyOjtYhIyMODQtSAscarEWmO0; TASession=%1%V2ID.DB1E39A86DD64A9E82D2F0008421F009*SQ.3*PR.40185%7C*LS.RegistrationController*HS.recommended*ES.popularity*DS.5*SAS.popularity*FPS.oldFirst*TS.A154BA43833F18AA03D8C718F0608388*FA.1*DF.0*TRA.true*EAU._; TAUD=LA-1686225938887-1*RDD-1-2023_06_08*LG-1-2.1.F.*LD-2-.....; G_AUTH2_MIGRATION=informational; __vt=LbQQq4pRdlJM3t9SABQCwDrKuA05TCmUEEd0_4-PPCXrwu1Eo52JCei_1XaZ0mzlteeOUghb1HTghzQxEHNSc2WRDu93yp139wzmxctG3xZ4m6z7kZFDYtEKmadlprT6E4SJxqzo06ro-nfVdbOcoi9atD3mLcqfX-AS7JomG2Ofq1czH5Op3gWrvAZxeKAu2q9EIJ_7XSPqnnQR8pTrjRHlVPspWTj_qTztD-WHMkQYom1qp32DIj2G12PelmINC3GaKnQ31leLVxqitse5BtgeNCvgEXPpZQzaI_NOxnYHTV4PaYAd-Q; datadome=5wmJZNiVh80yasrWg-M64TVwJEWeIV05xpJndjKHmt8h9LWz-Ti9SkCydC0EIZ3xfPfZ4qx5S9uy9RxZa8JiTg_Ml9wRMdkgVAo5ZKMAcHa96PxrVmjg3TtCYZxna_Z0; OptanonConsent=isGpcEnabled=0&datestamp=Thu+Jun+08+2023+13%3A06%3A22+GMT%2B0100+(hora+de+verano+de+Europa+occidental)&version=202209.1.0&isIABGlobal=false&hosts=&consentId=b2ae457a-4d7d-46bc-8bf8-01d0fae6ab5a&interactionCount=1&landingPath=https%3A%2F%2Fwww.tripadvisor.de%2F&groups=C0001%3A1%2CC0002%3A0%2CC0003%3A0%2CC0004%3A0%2CSTACK42%3A0",
+            "dnt": "1",
+            "pragma": "no-cache",
+            "referer": "https://www.tripadvisor.com/",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36" 
+        }
+        try:
+            r = requests.get(url, headers=headers, proxies={"https":proxy}, timeout=2)
+            return proxy
+        except Exception as e:
+            # print(e)
+            return None
+
+    def __get_proxy_list__(self):
+        alive = []
+        with open("free_proxy.txt", "r") as f:
+            proxies = f.read().splitlines()
+
+        alive = self.parallelize_process(proxies, self.__check_proxy__, workers=len(proxies), threads=True, desc="Proxy check")
+        alive = [x for x in alive if x is not None]
+        print(alive)
+        return alive
+           
+    def get_proxy(self):
+        # selected_proxy = np.random.choice(self.proxy_list)
+        selected_proxy = ""
+        return {'https': selected_proxy}
+
     def get_city_id_name(self):
         url = f"https://www.tripadvisor.com/TypeAheadJson?action=API&query={self.city_query}"
-        headers = {'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36'}
-        r = requests.get(url, headers=headers)
-        response = json.loads(r.text)
-        response = [r for r in response["results"] if r["type"]=="GEO"]
-        geo_id = int(response[0]['value'])
-        
-        print(f"Selected city: {response[0]['name']} [{geo_id}]")
+        headers = {
+            "authority": "www.tripadvisor.com",
+            "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+            "accept-language": "es,en;q=0.9,ca;q=0.8",
+            "cache-control": "no-cache",
+            "dnt": "1",
+            "pragma": "no-cache",
+            "referer": "https://www.tripadvisor.com/",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36" 
+        }
 
-        return geo_id, response[0]["name"].split(", ")[0]
+        max_retries = 3  # Número máximo de intentos
+        retries = 0
+
+        while retries < max_retries:
+            try:
+                r = requests.get(url, headers=headers, proxies=self.get_proxy())
+                r.raise_for_status()  # Comprobar si la respuesta es exitosa
+                response = json.loads(r.text)
+                response = [r for r in response["results"] if r["type"]=="GEO"]
+                geo_id = int(response[0]['value'])
+                print(f"Selected city: {response[0]['name']} [{geo_id}]")
+                return geo_id, response[0]["name"].split(", ")[0]
+            except requests.exceptions.RequestException as e:
+                retries += 1
+                print(f"Request failed: {str(e)}. Retrying... ({retries}/{max_retries})")
+                wait_time = random.randint(1, 5)  # Tiempo de espera aleatorio entre 1 y 5 segundos
+                time.sleep(wait_time)
+        
+        print("Max retries exceeded. Unable to fetch city data.")
+        exit()
     
     def get_request_params(self):
 
@@ -67,7 +134,7 @@ class TripAdvisor():
         params["X-Requested-With"] = "XMLHttpRequest"
         return(params)
     
-    def parallelize_process(self, data, function, workers=24, threads=False, desc=""):
+    def parallelize_process(self, data, function, workers=24, threads=True, desc=""):
 
         workers = min(workers, len(data))
 
@@ -103,7 +170,7 @@ class TripAdvisor():
     def download_images(self, reviews, high_res=True):
         # Solo reviews con foto
         reviews["n_images"] = reviews["images"].apply(lambda x: len(x))
-        reviews = reviews.loc[reviews["n_images"]>0][["itemId", "reviewId", "images"]]
+        reviews = reviews.loc[reviews["n_images"]>0][["itemId", "reviewId", "images"]].sample(frac=1)
         # Crear carpeta de imágenes
         self.out_img_path = f"{self.out_path}images/"
         os.makedirs(self.out_img_path, exist_ok=True)
@@ -147,8 +214,10 @@ class TripAdvisor():
                         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                         verified = True
                     except Exception as e:
-                        print(img_path, flush=True)
+                        # Ojo, posible bucle infinito
+                        print(f"{img_path}\n{img_url}\n{exist}-{verified}", flush=True)
                         os.remove(img_path)
+                        
                 
         return True
 
@@ -162,7 +231,7 @@ class TripAdvisor():
 
         while i < len(possible_urls) and img_response!=200:
             nm = possible_urls[i]
-            new_url = re.sub(r"photo-(\w)", f"photo-{nm}", new_url, 0, re.MULTILINE)
+            new_url = re.sub(r"\/photo-(\w)\/", f"/photo-{nm}/", new_url, 0, re.MULTILINE)
             session = self.retry_session(retries=10)
             response = session.get(url=new_url, timeout=5)
             img_response = response.status_code
@@ -170,7 +239,7 @@ class TripAdvisor():
             i+=1
 
         if i == len(possible_urls):
-            print(lowres_url, flush=True)
+            print(f"\nERROR: {lowres_url}", flush=True)
             raise ValueError
 
         return new_url, img_content
@@ -182,7 +251,7 @@ class TripAdvisor():
             read=retries,
             connect=retries,
             backoff_factor=backoff_factor,
-            method_whitelist=False,
+            # method_whitelist=False,
         )
         adapter = HTTPAdapter(max_retries=retry)
         session.mount('http://', adapter)
@@ -214,17 +283,20 @@ class TripAdvisor():
         all_users = []
 
         for batch in review_batches:
-            payload = f"reviews={'%2C'.join(batch)}&contextChoice=DETAIL&loadMtHeader=true"
+            payload = f"reviews={'%2C'.join(batch)}&contextChoice=DETAIL"
             response = requests.request("POST", expand_url, data=payload,  headers=headersList)
             pq = PyQuery(f"<html><head></head><body>{response.text}</body></html>")
 
-            for review in pq.find("body div[data-reviewlistingid]"):
+            reviews = pq.find("body div[data-reviewlistingid]")
+            # si no coincide suele ser por que la misma review aparece con 2 ids. Traducida y sin
+            # assert len(reviews) == len(all_review_codes) 
+            
+            for rvidx, review in enumerate(reviews):
                 #Review info
                 review = PyQuery(review)
                 review.find("div.mgrRspnInline").remove() # Remove owner answers
 
                 review_id = int(review.attr("data-reviewlistingid"))             
-
                 review_title = review.find("div.quote").text()
                 review_text = review.find("p.partial_entry").text()
 
@@ -254,7 +326,8 @@ class TripAdvisor():
 
                 all_reviews.append((review_id, user_id, item_id, review_title, review_text, review_date, review_rating, review_lang, review_images, review_url))
                 all_users.append((user_id, user_name, user_loc))
-        
+
+
         return all_reviews, all_users
 
 

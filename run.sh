@@ -2,8 +2,9 @@
 
 MAXTSTS=4
 
-declare -a CITIES=( "Gijon" "Barcelona" "Warsaw" "Budapest" "Hamburg" "Vienna" "Bucharest" "New York City" "Paris" "Rome" "Madrid" "Berlin" "London" )
-declare -a CITIES=( "Barcelona" "Paris")
+declare -a CITIES=( "Warsaw" "Budapest" "Hamburg" "Vienna" "Bucharest" "New York City" "Rome" "Berlin" "London" "Porto", "Lisbon" )
+declare -a CITIES=( "Gijon" "Madrid" "Barcelona" "Paris")
+declare -a CITIES=( "Gijon" "Barcelona" )
 
  for CITY in "${CITIES[@]}" ;do
     echo "-$CITY"
@@ -13,10 +14,9 @@ declare -a CITIES=( "Barcelona" "Paris")
     # Si se alcanza el máximo de procesos simultaneos, esperar
     while [ $(jobs -r | wc -l) -eq $MAXTSTS ];
     do
-    sleep 5
+      sleep 5
     done
 
-    done
 done
 
 # Esperar por los últimos
