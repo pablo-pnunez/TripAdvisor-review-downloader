@@ -37,7 +37,8 @@ class TripAdvisorRestaurants(TripAdvisor):
         else:
             num_pages = self.get_item_pages()
             data = list(range(num_pages))
-            results = self.parallelize_process(data=data, function=self.download_items_from_page, desc=f"Items from {self.city}")
+            results = self.parallelize_process(
+                data=data, function=self.download_items_from_page, desc=f"Items from {self.city}")
             out_data = pd.DataFrame(sum(results,[]), columns=self.item_cols)
             pd.to_pickle(out_data, file_path)
             
@@ -55,7 +56,9 @@ class TripAdvisorRestaurants(TripAdvisor):
             out_data_reviews = pd.read_pickle(file_path_reviews)
             out_data_users = pd.read_pickle(file_path_users)
         else:
-            results = self.parallelize_process(threads=True, data=items.values.tolist(), function=self.download_reviews_from_item, desc=f"Reviews from {self.city}")
+            results = self.parallelize_process(
+                threads=True, data=items.values.tolist(), function=self.download_reviews_from_item, 
+                desc=f"Reviews from {self.city}")
             res_reviews, res_users = list(zip(*results))
 
             out_data_reviews = pd.DataFrame(sum(res_reviews,[]), columns=self.review_cols)
@@ -85,7 +88,7 @@ class TripAdvisorRestaurants(TripAdvisor):
 
         if(len(rsts) == 0):
             print(f"Error getting items from: {url}")
-            raise ValueError
+            raise ValueError(f"Error getting items from: {url}")
 
         ret_data = []
         for r in rsts.items():
@@ -134,7 +137,9 @@ class TripAdvisorRestaurants(TripAdvisor):
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36 Edg/111.0.1661.51",
             "x-requested-with": "XMLHttpRequest" 
         }
-        response = requests.request("POST", restaurant["url"], data=request_payload,  headers=headersList, timeout=5, proxies=self.get_proxy())
+        response = requests.request(
+            "POST", restaurant["url"], data=request_payload,  
+            headers=headersList, timeout=5, proxies=self.get_proxy())
         pq = PyQuery(response.text)
 
         # Review number (all_langs)

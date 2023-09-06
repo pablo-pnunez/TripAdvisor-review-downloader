@@ -10,14 +10,15 @@ def main():
 
     # cities = ["Gijon", "Barcelona", "Warsaw", "Budapest", "Hamburg", "Vienna", "Bucharest", "New York City", "Paris", "Rome", "Madrid", "Berlin", "London"]
     # cities = ["Istanbul", "Moscow", "Saint Petersburg, Russia", "Athens"]
-    cities = ["Barcelona"]
+    cities = ["Gijon"]
 
     if len(sys.argv) > 1:
         cities = [sys.argv[1]]
 
+
     for city in cities:
 
-        print(f"{'-'*50}\n{city}\n{'-'*50}")        
+        print(f"{'-'*50}\n{city}\n{'-'*50}")
 
         download_images = True
         download_hd_images = True

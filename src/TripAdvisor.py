@@ -18,16 +18,19 @@ import re
 
 import socks
 import socket
+import random
+
 
 class TripAdvisor():
-    
     base_url = "https://www.tripadvisor.com"
-
-    review_cols = ["reviewId", "userId", "itemId", "title", "text", "date", "rating", "language", "images", "url"]
+    review_cols = [
+        "reviewId", "userId", "itemId", "title", "text", "date", "rating", 
+        "language", "images", "url"]
     user_cols = ["userId", "name", "location"]
 
-    def __init__(self, city_query, lang="en", category=""):
 
+    def __init__(self, city_query, lang="en", category=""):
+    
         self.city_query = city_query
         # self.proxy_list = self.__get_proxy_list__()
 
@@ -41,7 +44,18 @@ class TripAdvisor():
 
         self.request_params = self.get_request_params()
 
-    def __check_proxy__(self, proxy):
+
+    def __check_proxy__(self, proxy:str) -> str:
+        """Función que comprueba la disponibilidad de una proxy para hacer 
+        consultas a TripAdvisor. En el caso de que no responda en dos segundos, 
+        se considera que el proxy no está disponible.
+
+        Args:
+            proxy (str): dirección ip del proxy.
+        Returns:
+            str: None si el proxy no está disponible, la dirección del proxy si 
+                sí lo está.
+        """        
         # user_info, proxy_info = proxy.split("//")[1].split("@")
         # username, password = user_info.split(":")
         # proxy_host, proxy_port = proxy_info.split(":")
@@ -64,25 +78,43 @@ class TripAdvisor():
             r = requests.get(url, headers=headers, proxies={"https":proxy}, timeout=2)
             return proxy
         except Exception as e:
-            # print(e)
             return None
 
-    def __get_proxy_list__(self):
+
+    def __get_proxy_list__(self) -> list:
+        """Función que extrae las direcciones ip de los proxies almacenadas en 
+        en un fichero de texto en el que hay una dirección por línea y 
+        selecciona solo aquellos proxies aptos para realizar queries a 
+        TripAdvisor. Esto se hace en con ejecución paralela.
+
+        Returns:
+            list: direcciones ip de los proxies aptos.
+        """
         alive = []
         with open("free_proxy.txt", "r") as f:
             proxies = f.read().splitlines()
 
-        alive = self.parallelize_process(proxies, self.__check_proxy__, workers=len(proxies), threads=True, desc="Proxy check")
+        alive = self.parallelize_process(
+            proxies, self.__check_proxy__, workers=len(proxies), 
+            threads=True, desc="Proxy check")
         alive = [x for x in alive if x is not None]
         print(alive)
         return alive
-           
+
+
     def get_proxy(self):
         # selected_proxy = np.random.choice(self.proxy_list)
-        selected_proxy = ""
+        selected_proxy = "" # deshabilita el uso de proxies
         return {'https': selected_proxy}
 
-    def get_city_id_name(self):
+
+    def get_city_id_name(self) -> tuple:
+        """Función que obtiene el geoid de la ciudad que se desa scrappear. 
+        Intenta la operación al menos tres veces.
+
+        Returns:
+            tuple: dupla de (geoid, código de respuesta http).
+        """
         url = f"https://www.tripadvisor.com/TypeAheadJson?action=API&query={self.city_query}"
         headers = {
             "authority": "www.tripadvisor.com",
@@ -115,43 +147,90 @@ class TripAdvisor():
         
         print("Max retries exceeded. Unable to fetch city data.")
         exit()
-    
-    def get_request_params(self):
 
+    
+    def get_request_params(self) -> dict:
+        """Función que genera los parámetros necesarios para realizar un GET a
+        TripAdvisor.
+
+        Returns:
+            dict: Diccionario con los prarámetros
+        """
+        
         url = f"https://www.tripadvisor.com/RestaurantSearch&geo={self.geo_id}"
         params = {'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36', }
 
         r = requests.get(url, headers=params)
-
+        # Se obtiene la cookie de sesión
         cookieDict = r.cookies.get_dict()
-        cookieDict["TASession"] = cookieDict["TASession"].replace("TRA.true", "TRA.false")
+        cookieDict["TASession"] = cookieDict["TASession"] \
+            .replace("TRA.true", "TRA.false")
 
-        cookieDict = {"TAUnique": "%1%enc%3AP4eDoHhGTx3dk0g9tT58cSIjdxMtLaGxvCpuHkLALKBcZDjTQsqGzA%3D%3D",
-                      "TASession": cookieDict["TASession"]}
+        cookieDict = {
+            # Se añade la cookie de identificación
+            "TAUnique": "%1%enc%3AP4eDoHhGTx3dk0g9tT58cSIjdxMtLaGxvCpuHkLALKBcZDjTQsqGzA%3D%3D",
+            "TASession": cookieDict["TASession"]}
 
         params["Cookie"] = ";".join(['%s=%s' % (name, value) for (name, value) in cookieDict.items()])
         params['cache-control'] = 'no-cache,no-store,must-revalidate'
         params["X-Requested-With"] = "XMLHttpRequest"
         return(params)
     
-    def parallelize_process(self, data, function, workers=24, threads=True, desc=""):
 
+    # PASAR A DECORADOR. TIENE HERENCIA EN EL RESTO DE CLASES.
+    def parallelize_process(
+            self, data:list, function, workers:int=24, 
+            threads:bool=True, desc:str="") -> list:
+        """Función que paraleliza la ejecución de una función en bucle.
+
+        Args:
+            data (list): lista con los datos que recorre la función original
+            function (function): función que se desea paralelizar
+            workers (int, optional): número de hilos. Defaults to 24.
+            threads (bool, optional): decide el tipo de clase a utilizar. 
+                Defaults to True.
+            desc (str, optional): parámetro tqdm. Defaults to "".
+
+        Returns:
+            list: resultados de la ejecución en paralelo.
+        """
         workers = min(workers, len(data))
 
         if threads:  
             with ThreadPoolExecutor(max_workers=workers) as executor:
                 # results = list(executor.map(function, data))
-                results = list(tqdm(executor.map(function, data), total=len(data), desc=desc, file=sys.stdout))
+                results = list(
+                    tqdm(
+                        executor.map(function, data), 
+                        total=len(data), 
+                        desc=desc, 
+                        file=sys.stdout
+                    )
+                )
 
         else:
             with Pool(processes=workers) as pool:
                 # results = pool.map(self.download_restaurants_from_page, data)
-                results = list(tqdm(pool.imap(function, data), total=len(data), desc=desc, file=sys.stdout))
-
+                results = list(
+                    tqdm(
+                        pool.imap(function, data), 
+                        total=len(data), 
+                        desc=desc, 
+                        file=sys.stdout
+                    )
+                )
         return results
 
-    def download_data(self, download_image_files=True, high_res_images=True):
-        '''Descarga todos los datos de una ciudad'''
+
+    def download_data(
+            self, download_image_files:bool=True, high_res_images:bool=True
+            ) -> None:
+        """Función que descarga todos los datos de una ciudad.
+
+        Args:
+            download_image_files (bool, optional): Defaults to True.
+            high_res_images (bool, optional): Defaults to True.
+        """
 
         # 1. Download restaurants
         items = self.download_items()
@@ -161,13 +240,23 @@ class TripAdvisor():
         if download_image_files:
             self.download_images(reviews[0], high_res=high_res_images)
 
+
     def download_items(self):
         raise NotImplemented
+
 
     def download_reviews(self, items):
         raise NotImplemented
 
-    def download_images(self, reviews, high_res=True):
+
+    def download_images(self, reviews:dict, high_res:bool=True) -> None:
+        """Función de descarga de imágenes.
+
+        Args:
+            reviews (dict): diccionario con las reviews.
+            high_res (bool, optional): Descarga de las imágenes en alta 
+                resolución. Defaults to True.
+        """
         # Solo reviews con foto
         reviews["n_images"] = reviews["images"].apply(lambda x: len(x))
         reviews = reviews.loc[reviews["n_images"]>0][["itemId", "reviewId", "images"]].sample(frac=1)
@@ -175,9 +264,28 @@ class TripAdvisor():
         self.out_img_path = f"{self.out_path}images/"
         os.makedirs(self.out_img_path, exist_ok=True)
         # Método que descarga las fotos de una review
-        self.parallelize_process(threads=True, workers=32 ,data=reviews.values.tolist(), function=partial(self.download_images_from_review, high_res=high_res), desc=f"Images from {self.city}")
+        self.parallelize_process(
+            threads=True, workers=32 ,data=reviews.values.tolist(), 
+            # partial fija un número de de parámetros de la antigua función, en
+            # este caso el parámetro high_res, asociándola a una nueva función, 
+            # en este caso function
+            function=partial(self.download_images_from_review, high_res=high_res), 
+            desc=f"Images from {self.city}")
     
-    def download_images_from_review(self, review, high_res=True):
+
+    def download_images_from_review(
+            self, review:list, high_res:bool=True) -> bool:
+        """Función que descarga las imágenes específicas de una reveiew.
+
+        Args:
+            review (list): lista con el id del item, el id de la review y las
+                imágenes de la review.
+            high_res (bool, optional): Defaults to True.
+
+        Returns:
+            bool: Devuelve True si se ha ejecutado correctamente.
+        """
+
         item_id = review[0]
         review_id = review[1]
         images = review[2]
@@ -194,7 +302,6 @@ class TripAdvisor():
             verified = False
 
             while not exist or not verified:
-
                 if not exist:
                     if high_res:
                         img_url, img_content = self.image_url_to_highres(img_url)
@@ -217,9 +324,8 @@ class TripAdvisor():
                         # Ojo, posible bucle infinito
                         print(f"{img_path}\n{img_url}\n{exist}-{verified}", flush=True)
                         os.remove(img_path)
-                        
-                
         return True
+
 
     def image_url_to_highres(self, lowres_url):
         possible_urls = ["o", "w", "m", "p", "s", "i", "f", "l", "t"]
@@ -231,7 +337,8 @@ class TripAdvisor():
 
         while i < len(possible_urls) and img_response!=200:
             nm = possible_urls[i]
-            new_url = re.sub(r"\/photo-(\w)\/", f"/photo-{nm}/", new_url, 0, re.MULTILINE)
+            new_url = re.sub(
+                r"\/photo-(\w)\/", f"/photo-{nm}/", new_url, 0, re.MULTILINE)
             session = self.retry_session(retries=10)
             response = session.get(url=new_url, timeout=5)
             img_response = response.status_code
@@ -243,6 +350,7 @@ class TripAdvisor():
             raise ValueError
 
         return new_url, img_content
+
 
     def retry_session(self, retries, session=None, backoff_factor=0.3):
         session = session or requests.Session()
@@ -257,6 +365,7 @@ class TripAdvisor():
         session.mount('http://', adapter)
         session.mount('https://', adapter)
         return session
+
 
     def expand_reviews_from_id(self, all_review_codes, item_url, batch_size=50):
 
